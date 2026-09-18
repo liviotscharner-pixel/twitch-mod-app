@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' wss://irc-ws.chat.twitch.tv:443; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' https: data:;" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kanal</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1 id="channelTitle">Kanal</h1>
+      <div class="meta" id="channelMeta"></div>
+    </div>
+    <div class="conn" id="connStatus">Verbinde…</div>
+  </header>
+
+  <div class="layout">
+    <section class="chat-pane">
+      <div id="chatLog" class="chat-log" aria-live="polite"></div>
+      <form id="chatForm" class="chat-input-row">
+        <input id="chatInput" type="text" maxlength="500" placeholder="Nachricht senden…" autocomplete="off" />
+        <button type="submit" class="btn-send">Senden</button>
+      </form>
+    </section>
+
+    <aside class="mod-pane">
+      <h2>Mod-Ziel</h2>
+      <label class="field">
+        <span>Benutzername</span>
+        <input id="targetUser" type="text" placeholder="username" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Grund (optional)</span>
+        <input id="reason" type="text" placeholder="Grund…" autocomplete="off" />
+      </label>
+      <p class="hint">Klicke einen Chat-User, um ihn auszuwählen. Für „Nachricht löschen“ eine Nachricht anklicken.</p>
+
+      <div class="selected-msg" id="selectedMsg" hidden>
+        <span id="selectedMsgText"></span>
+        <button type="button" id="clearSelectedMsg" class="btn-tiny">×</button>
+      </div>
+
+      <h3>Timeout</h3>
+      <div class="btn-row timeouts">
+        <button type="button" class="btn-timeout" data-seconds="10">10s</button>
+        <button type="button" class="btn-timeout" data-seconds="60">1m</button>
+        <button type="button" class="btn-timeout" data-seconds="600">10m</button>
+        <button type="button" class="btn-timeout" data-seconds="3600">1h</button>
+      </div>
+      <div class="custom-timeout">
+        <input id="customSeconds" type="number" min="1" max="1209600" placeholder="Sek." />
+        <button type="button" id="customTimeoutBtn" class="btn-timeout">Custom</button>
+      </div>
+
+      <h3>Sperren</h3>
+      <div class="btn-row">
+        <button type="button" id="banBtn" class="btn-ban">Ban</button>
+        <button type="button" id="unbanBtn" class="btn-secondary">Unban / Untimeout</button>
+      </div>
+
+      <h3>Nachrichten</h3>
+      <div class="btn-row">
+        <button type="button" id="deleteMsgBtn" class="btn-secondary">Nachricht löschen</button>
+        <button type="button" id="clearChatBtn" class="btn-secondary">Chat leeren</button>
+      </div>
+
+      <h3>Chat-Modi</h3>
+      <div class="modes" id="modes">
+        <button type="button" class="mode-btn" data-mode="slow_mode">Slow-Mode</button>
+        <button type="button" class="mode-btn" data-mode="emote_mode">Emote-only</button>
+        <button type="button" class="mode-btn" data-mode="follower_mode">Followers-only</button>
+        <button type="button" class="mode-btn" data-mode="subscriber_mode">Subs-only</button>
+        <button type="button" class="mode-btn" data-mode="unique_chat_mode">Unique Chat</button>
+      </div>
+
+      <div id="actionStatus" class="action-status" hidden></div>
+    </aside>
+  </div>
+  <script src="irc.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

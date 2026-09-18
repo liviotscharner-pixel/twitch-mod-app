@@ -1,0 +1,68 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  background: #0e0e10;
+  color: #efeff1;
+  overflow: hidden;
+}
+.bg {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(145, 71, 255, 0.35), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(145, 71, 255, 0.12), transparent),
+    #0e0e10;
+  pointer-events: none;
+}
+main.card {
+  position: relative;
+  max-width: 480px;
+  margin: 8vh auto;
+  padding: 2.25rem 2rem;
+  background: #18181b;
+  border: 1px solid #2a2a2d;
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(0,0,0,.45);
+}
+.logo { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.75rem; }
+.logo h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+.subtitle { color: #adadb8; line-height: 1.5; margin-bottom: 1.5rem; font-size: 0.95rem; }
+.status {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.status.error { background: rgba(235, 4, 0, 0.15); border: 1px solid #eb0400; color: #ffb4b0; }
+.status.info { background: rgba(145, 71, 255, 0.15); border: 1px solid #9147ff; color: #d2b8ff; }
+.status.ok { background: rgba(0, 200, 100, 0.12); border: 1px solid #00c864; color: #9dffc8; }
+.btn-primary {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 0.9rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  background: #9147ff;
+  transition: background .15s, transform .1s;
+}
+.btn-primary:hover:not(:disabled) { background: #772ce8; }
+.btn-primary:active:not(:disabled) { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.55; cursor: wait; }
+.hints { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid #2a2a2d; }
+.hints h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; color: #adadb8; margin-bottom: 0.75rem; }
+.hints ul { list-style: none; display: flex; flex-direction: column; gap: 0.45rem; }
+.hints li { font-size: 0.88rem; color: #d3d3d8; line-height: 1.4; padding-left: 1rem; position: relative; }
+.hints li::before { content: "▸"; position: absolute; left: 0; color: #9147ff; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82em;
+  background: #0e0e10;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  color: #bf94ff;
+}
+.muted { margin-top: 0.85rem; font-size: 0.8rem; color: #848494; }

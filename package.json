@@ -1,0 +1,28 @@
+{
+  "name": "twitch-mod-app",
+  "version": "1.0.0",
+  "description": "Twitch Moderator Desktop-App mit Electron und TypeScript",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "build": "tsc && node scripts/copy-static.js",
+    "start": "npm run build && electron .",
+    "dev": "npm run build && electron . --enable-logging",
+    "watch": "tsc -w"
+  },
+  "keywords": [
+    "twitch",
+    "moderator",
+    "electron"
+  ],
+  "author": "Livio Tscharner",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "electron": "^33.2.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "electron-store": "^8.2.0"
+  }
+}

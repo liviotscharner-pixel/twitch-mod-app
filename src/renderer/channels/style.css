@@ -1,0 +1,78 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  min-height: 100%;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  background: #0e0e10;
+  color: #efeff1;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.25rem;
+  background: #18181b;
+  border-bottom: 1px solid #2a2a2d;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.brand { display: flex; align-items: center; gap: 0.55rem; }
+.dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #9147ff; box-shadow: 0 0 10px #9147ff;
+}
+.user { display: flex; align-items: center; gap: 0.5rem; color: #adadb8; font-size: 0.9rem; }
+.btn-ghost {
+  border: 1px solid #3a3a3d;
+  background: transparent;
+  color: #efeff1;
+  border-radius: 6px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.btn-ghost:hover { background: #2a2a2d; }
+.btn-ghost.danger { color: #ff8280; border-color: #5a2a2a; }
+.btn-ghost.danger:hover { background: rgba(235,4,0,.12); }
+main { padding: 1.5rem 1.5rem 2.5rem; max-width: 960px; margin: 0 auto; }
+.intro h1 { font-size: 1.5rem; margin-bottom: 0.35rem; }
+.intro p { color: #adadb8; margin-bottom: 1.25rem; }
+.banner {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+.banner.error { background: rgba(235,4,0,.12); border: 1px solid #eb0400; color: #ffb4b0; }
+.banner.info { background: rgba(145,71,255,.12); border: 1px solid #9147ff; color: #d2b8ff; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.85rem;
+}
+.card {
+  background: #18181b;
+  border: 1px solid #2a2a2d;
+  border-radius: 12px;
+  padding: 1.1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color .15s, transform .1s;
+}
+.card:hover { border-color: #9147ff; }
+.card h2 { font-size: 1.05rem; }
+.card .login { color: #adadb8; font-size: 0.85rem; }
+.card button {
+  margin-top: auto;
+  border: none;
+  border-radius: 7px;
+  padding: 0.55rem 0.85rem;
+  background: #9147ff;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.card button:hover { background: #772ce8; }
+.empty { text-align: center; padding: 3rem 1rem; color: #adadb8; }
+.empty .muted { margin-top: 0.5rem; font-size: 0.85rem; color: #848494; }

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' https: data:;" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Twitch Mod App – Kanäle</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <strong>Twitch Mod App</strong>
+    </div>
+    <div class="user" id="userBox">
+      <span id="userName">…</span>
+      <button type="button" id="refreshBtn" class="btn-ghost" title="Aktualisieren">↻</button>
+      <button type="button" id="logoutBtn" class="btn-ghost danger">Abmelden</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h1>Moderierte Kanäle</h1>
+      <p>Öffne einen Kanal in einem eigenen Fenster mit Live-Chat und Mod-Aktionen.</p>
+    </section>
+
+    <div id="error" class="banner error" hidden></div>
+    <div id="loading" class="banner info">Lade Kanäle…</div>
+
+    <div id="list" class="grid" hidden></div>
+    <div id="empty" class="empty" hidden>
+      <p>Keine moderierten Kanäle gefunden.</p>
+      <p class="muted">Du musst auf dem jeweiligen Kanal als Moderator eingetragen sein.</p>
+    </div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

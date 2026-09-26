@@ -6,7 +6,7 @@
   const moderatorId = params.get('moderatorUserId') || '';
   const moderatorLogin = params.get('moderatorLogin') || '';
 
-  document.title = `Mod · ${broadcasterName}`;
+  document.title = `Twitchy · ${broadcasterName}`;
   document.getElementById('channelTitle').textContent = broadcasterName;
   document.getElementById('channelMeta').textContent = `#${broadcasterLogin} · Mod: ${moderatorLogin}`;
 
@@ -211,7 +211,7 @@
         user: moderatorLogin.toLowerCase(),
         displayName: moderatorLogin,
         message: text,
-        color: '#9147ff',
+        color: '#F28C28',
         badges: ['moderator'],
         timestamp: Date.now(),
       });

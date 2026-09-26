@@ -1,0 +1,27 @@
+/* Twitchy / Hasenstyle – Playlisty dark bunny theme */
+:root {
+  --bg: #171411;
+  --surface: #241D18;
+  --raised: #30251E;
+  --border: #4A382B;
+  --text: #FFF1DE;
+  --muted: #B9A28D;
+  --carrot: #F28C28;
+  --carrot-hover: #FF9F3D;
+  --accent-soft: #3A2819;
+  --leaf: #79B86A;
+  --leaf-hover: #8BC97C;
+  --danger: #E47767;
+  --danger-hover: #F08A7B;
+  --ok: #79B86A;
+  --radius-card: 14px;
+  --radius-row: 10px;
+  --radius-btn: 10px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
+
+  /* Chat role accents (functional, warm-tuned) */
+  --role-mod: #E47767;
+  --role-vip: #D4A5C8;
+  --role-sub: #7A9EC8;
+  --role-normal: #79B86A;
+}

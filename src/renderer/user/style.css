@@ -1,9 +1,9 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   height: 100%;
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-  background: #0e0e10;
-  color: #efeff1;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
   overflow: hidden;
 }
 .topbar {
@@ -12,11 +12,11 @@ html, body {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.7rem 1rem;
-  background: #18181b;
-  border-bottom: 1px solid #2a2a2d;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
-.topbar h1 { font-size: 1.1rem; }
-.meta { color: #adadb8; font-size: 0.8rem; margin-top: 0.15rem; }
+.topbar h1 { font-size: 1.1rem; color: var(--text); }
+.meta { color: var(--muted); font-size: 0.8rem; margin-top: 0.15rem; }
 .role-pill {
   font-size: 0.72rem;
   font-weight: 700;
@@ -26,10 +26,10 @@ html, body {
   border-radius: 999px;
   border: 1px solid currentColor;
 }
-.role-pill.role-mod { color: #ff8a86; background: rgba(235, 4, 0, 0.18); }
-.role-pill.role-vip { color: #d2b8ff; background: rgba(145, 71, 255, 0.2); }
-.role-pill.role-sub { color: #9db8ff; background: rgba(31, 105, 255, 0.2); }
-.role-pill.role-normal { color: #9dffc8; background: rgba(0, 200, 100, 0.15); }
+.role-pill.role-mod { color: #F5B8AE; background: rgba(228, 119, 103, 0.18); }
+.role-pill.role-vip { color: #EBD0E2; background: rgba(212, 165, 200, 0.2); }
+.role-pill.role-sub { color: #C5D6EA; background: rgba(122, 158, 200, 0.2); }
+.role-pill.role-normal { color: #C5E8B8; background: rgba(121, 184, 106, 0.15); }
 
 .layout {
   display: grid;
@@ -40,7 +40,7 @@ html, body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-bottom: 1px solid #2a2a2d;
+  border-bottom: 1px solid var(--border);
 }
 .chat-log {
   flex: 1;
@@ -48,40 +48,42 @@ html, body {
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
   line-height: 1.45;
+  background: var(--bg);
 }
 .live-hint {
   padding: 0.35rem 1rem 0.55rem;
   font-size: 0.72rem;
-  color: #848494;
+  color: var(--muted);
+  background: var(--surface);
 }
 .chat-line { word-break: break-word; }
 .chat-block {
   margin: 0.35rem 0;
   padding: 0.45rem 0.65rem 0.5rem;
-  border-radius: 8px;
+  border-radius: var(--radius-row);
   border: 1.5px solid transparent;
   border-left-width: 4px;
-  background: #18181b;
+  background: var(--surface);
 }
 .chat-block.role-mod {
-  border-color: #eb0400;
-  border-left-color: #eb0400;
-  background: linear-gradient(90deg, rgba(235, 4, 0, 0.12), #18181b 28%);
+  border-color: var(--role-mod);
+  border-left-color: var(--role-mod);
+  background: linear-gradient(90deg, rgba(228, 119, 103, 0.16), var(--surface) 28%);
 }
 .chat-block.role-vip {
-  border-color: #bf94ff;
-  border-left-color: #9147ff;
-  background: linear-gradient(90deg, rgba(145, 71, 255, 0.14), #18181b 28%);
+  border-color: var(--role-vip);
+  border-left-color: var(--role-vip);
+  background: linear-gradient(90deg, rgba(212, 165, 200, 0.16), var(--surface) 28%);
 }
 .chat-block.role-sub {
-  border-color: #1f69ff;
-  border-left-color: #1f69ff;
-  background: linear-gradient(90deg, rgba(31, 105, 255, 0.14), #18181b 28%);
+  border-color: var(--role-sub);
+  border-left-color: var(--role-sub);
+  background: linear-gradient(90deg, rgba(122, 158, 200, 0.16), var(--surface) 28%);
 }
 .chat-block.role-normal {
-  border-color: #00a86b;
-  border-left-color: #00c864;
-  background: linear-gradient(90deg, rgba(0, 200, 100, 0.1), #18181b 28%);
+  border-color: var(--role-normal);
+  border-left-color: var(--role-normal);
+  background: linear-gradient(90deg, rgba(121, 184, 106, 0.12), var(--surface) 28%);
 }
 .chat-block-header {
   display: flex;
@@ -90,10 +92,10 @@ html, body {
   gap: 0.35rem;
   margin-bottom: 0.2rem;
 }
-.chat-line .time { color: #5c5c66; font-size: 0.72rem; }
+.chat-line .time { color: var(--muted); font-size: 0.72rem; }
 .chat-line .user { font-weight: 700; }
 .chat-line .body {
-  color: #efeff1;
+  color: var(--text);
   line-height: 1.4;
   white-space: pre-wrap;
 }
@@ -106,19 +108,19 @@ html, body {
   border-radius: 999px;
   border: 1px solid currentColor;
 }
-.role-mod .role-badge { color: #ff8a86; background: rgba(235, 4, 0, 0.18); }
-.role-vip .role-badge { color: #d2b8ff; background: rgba(145, 71, 255, 0.2); }
-.role-sub .role-badge { color: #9db8ff; background: rgba(31, 105, 255, 0.2); }
-.role-normal .role-badge { color: #9dffc8; background: rgba(0, 200, 100, 0.15); }
+.role-mod .role-badge { color: #F5B8AE; background: rgba(228, 119, 103, 0.18); }
+.role-vip .role-badge { color: #EBD0E2; background: rgba(212, 165, 200, 0.2); }
+.role-sub .role-badge { color: #C5D6EA; background: rgba(122, 158, 200, 0.2); }
+.role-normal .role-badge { color: #C5E8B8; background: rgba(121, 184, 106, 0.15); }
 .empty-state {
-  color: #848494;
+  color: var(--muted);
   font-style: italic;
   padding: 1rem 0.25rem;
 }
 
 .mod-pane {
   padding: 0.85rem 0.9rem 1.2rem;
-  background: #141416;
+  background: var(--raised);
   max-height: 42vh;
   overflow-y: auto;
 }
@@ -127,65 +129,74 @@ html, body {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #adadb8;
+  color: var(--muted);
   margin: 0.85rem 0 0.4rem;
 }
-.target-line { font-size: 0.9rem; margin-bottom: 0.55rem; color: #adadb8; }
-.target-line strong { color: #efeff1; }
+.target-line { font-size: 0.9rem; margin-bottom: 0.55rem; color: var(--muted); }
+.target-line strong { color: var(--text); }
 .field { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.4rem; }
-.field span { font-size: 0.75rem; color: #adadb8; }
+.field span { font-size: 0.75rem; color: var(--muted); }
 .field input, .custom-timeout input {
-  background: #0e0e10;
-  border: 1px solid #3a3a3d;
-  border-radius: 6px;
-  color: #efeff1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
   padding: 0.45rem 0.6rem;
   outline: none;
+  font-family: var(--font);
 }
-.field input:focus, .custom-timeout input:focus { border-color: #9147ff; }
+.field input:focus, .custom-timeout input:focus { border-color: var(--carrot); }
 .btn-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .timeouts .btn-timeout, #customTimeoutBtn {
   flex: 1 1 45%;
-  background: #00a86b;
-  color: #fff;
+  background: var(--leaf);
+  color: #142016;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 0.55rem 0.4rem;
   font-weight: 700;
   cursor: pointer;
 }
-.timeouts .btn-timeout:hover, #customTimeoutBtn:hover { background: #008f5b; }
+.timeouts .btn-timeout:hover, #customTimeoutBtn:hover { background: var(--leaf-hover); }
 .custom-timeout { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
 .custom-timeout input { width: 5rem; }
 .btn-ban {
   flex: 1;
-  background: #eb0400;
-  color: #fff;
+  background: var(--danger);
+  color: #1a100e;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 0.6rem 0.5rem;
   font-weight: 700;
   cursor: pointer;
 }
-.btn-ban:hover { background: #c50300; }
+.btn-ban:hover { background: var(--danger-hover); }
 .btn-secondary {
   flex: 1;
-  background: #2a2a2d;
-  color: #efeff1;
-  border: 1px solid #3a3a3d;
-  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
   padding: 0.55rem 0.45rem;
   font-weight: 600;
   cursor: pointer;
   font-size: 0.85rem;
 }
-.btn-secondary:hover { background: #3a3a3d; }
+.btn-secondary:hover { background: var(--accent-soft); border-color: var(--carrot); }
 .action-status {
   margin-top: 0.85rem;
   padding: 0.55rem 0.65rem;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.8rem;
   line-height: 1.35;
 }
-.action-status.ok { background: rgba(0,200,100,.12); border: 1px solid #00c864; color: #9dffc8; }
-.action-status.err { background: rgba(235,4,0,.12); border: 1px solid #eb0400; color: #ffb4b0; }
+.action-status.ok {
+  background: rgba(121, 184, 106, 0.12);
+  border: 1px solid var(--leaf);
+  color: #C5E8B8;
+}
+.action-status.err {
+  background: rgba(228, 119, 103, 0.12);
+  border: 1px solid var(--danger);
+  color: #F5B8AE;
+}

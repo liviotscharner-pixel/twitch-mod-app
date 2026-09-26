@@ -45,7 +45,7 @@
     userTitle.textContent = displayName || userLogin;
     userMeta.textContent = `@${userLogin} · #${broadcasterLogin}` + (userId ? ` · ID ${userId}` : '');
     targetLabel.textContent = `${displayName} (@${userLogin})`;
-    document.title = `User · ${displayName} · #${broadcasterLogin}`;
+    document.title = `Twitchy · ${displayName} · #${broadcasterLogin}`;
     if (role) {
       rolePill.hidden = false;
       rolePill.className = 'role-pill role-' + role;

@@ -75,8 +75,8 @@ function createMainWindow(): void {
     height: 720,
     minWidth: 720,
     minHeight: 520,
-    backgroundColor: '#0e0e10',
-    title: 'Twitch Mod App',
+    backgroundColor: '#171411',
+    title: 'Twitchy',
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,
@@ -111,8 +111,8 @@ function openChannelWindow(data: ChannelWindowData): void {
     height: 780,
     minWidth: 800,
     minHeight: 560,
-    backgroundColor: '#0e0e10',
-    title: `Mod · ${data.broadcasterName}`,
+    backgroundColor: '#171411',
+    title: `Twitchy · ${data.broadcasterName}`,
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,
@@ -169,8 +169,8 @@ function openUserWindow(payload: OpenUserWindowPayload): void {
     height: 700,
     minWidth: 400,
     minHeight: 480,
-    backgroundColor: '#0e0e10',
-    title: `User · ${data.displayName} · #${data.broadcasterLogin}`,
+    backgroundColor: '#171411',
+    title: `Twitchy · ${data.displayName} · #${data.broadcasterLogin}`,
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,

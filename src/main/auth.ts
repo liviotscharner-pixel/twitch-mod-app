@@ -60,11 +60,11 @@ function formatTokenError(status: number, text: string): Error {
 }
 
 function htmlPage(title: string, message: string, ok: boolean): string {
-  const color = ok ? '#9147ff' : '#eb0400';
+  const color = ok ? '#F28C28' : '#E47767';
   return `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>${title}</title>
-<style>body{font-family:Inter,Segoe UI,sans-serif;background:#0e0e10;color:#efeff1;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
-.card{background:#18181b;padding:2rem 2.5rem;border-radius:12px;border:1px solid #2a2a2d;max-width:420px;text-align:center}
-h1{color:${color};font-size:1.25rem;margin:0 0 .75rem}p{margin:0;opacity:.9;line-height:1.5}</style></head>
+<style>body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#171411;color:#FFF1DE;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.card{background:#241D18;padding:2rem 2.5rem;border-radius:14px;border:1px solid #4A382B;max-width:420px;text-align:center}
+h1{color:${color};font-size:1.25rem;margin:0 0 .75rem}p{margin:0;color:#B9A28D;line-height:1.5}</style></head>
 <body><div class="card"><h1>${title}</h1><p>${message}</p></div></body></html>`;
 }
 

@@ -22,9 +22,26 @@ import {
 import { getTokens, getUser, setUser, getStorePath } from './store';
 import type { ChannelWindowData, ChatSettings } from '../shared/types';
 
-dotenv.config({ path: path.join(app.getAppPath(), '.env') });
-// Also try project root when running from dist
-dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
+// Load .env from project root (cwd when npm start) and next to packaged app
+function loadEnv(): void {
+  const candidates = [
+    path.join(process.cwd(), '.env'),
+    path.join(app.getAppPath(), '.env'),
+    path.join(__dirname, '..', '..', '.env'),
+  ];
+  for (const envPath of candidates) {
+    const result = dotenv.config({ path: envPath });
+    if (!result.error) break;
+  }
+  // Strip UTF-8 BOM / whitespace from credentials (Windows editors often add BOM)
+  for (const key of ['TWITCH_CLIENT_ID', 'TWITCH_CLIENT_SECRET', 'TWITCH_REDIRECT_URI']) {
+    const v = process.env[key];
+    if (typeof v === 'string') {
+      process.env[key] = v.replace(/^\uFEFF/, '').trim();
+    }
+  }
+}
+loadEnv();
 
 let mainWindow: BrowserWindow | null = null;
 const channelWindows = new Map<string, BrowserWindow>();

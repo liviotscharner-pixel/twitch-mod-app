@@ -16,7 +16,7 @@ import { helixGet } from './helix';
 let callbackServer: http.Server | null = null;
 
 export function getClientId(): string {
-  return (process.env.TWITCH_CLIENT_ID || '').trim();
+  return (process.env.TWITCH_CLIENT_ID || '').replace(/^\uFEFF/, '').trim();
 }
 
 export function getRedirectUri(): string {

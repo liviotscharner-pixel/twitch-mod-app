@@ -22,7 +22,13 @@ import {
   resolveUserId,
 } from './helix';
 import { getTokens, getUser, setUser, getStorePath } from './store';
-import type { ChannelWindowData, ChatSettings } from '../shared/types';
+import type {
+  ChannelWindowData,
+  ChatMessage,
+  ChatSettings,
+  OpenUserWindowPayload,
+  UserWindowData,
+} from '../shared/types';
 
 // Load .env from project root (cwd when npm start) and next to packaged app
 function loadEnv(): void {
@@ -47,6 +53,13 @@ loadEnv();
 
 let mainWindow: BrowserWindow | null = null;
 const channelWindows = new Map<string, BrowserWindow>();
+const userWindows = new Map<string, BrowserWindow>();
+/** Bootstrap payload (incl. history) until the user window fetches it. */
+const userWindowBootstraps = new Map<string, OpenUserWindowPayload>();
+
+function userWindowKey(broadcasterId: string, userLogin: string): string {
+  return `${broadcasterId}:${userLogin.toLowerCase()}`;
+}
 
 function preloadPath(): string {
   return path.join(__dirname, '..', 'preload', 'preload.js');
@@ -124,6 +137,80 @@ function openChannelWindow(data: ChannelWindowData): void {
   });
 }
 
+function openUserWindow(payload: OpenUserWindowPayload): void {
+  const login = (payload.userLogin || '').toLowerCase();
+  if (!login) return;
+
+  const key = userWindowKey(payload.broadcasterId, login);
+  const existing = userWindows.get(key);
+  if (existing && !existing.isDestroyed()) {
+    // Refresh history bootstrap and notify live window
+    userWindowBootstraps.set(key, { ...payload, userLogin: login });
+    existing.webContents.send('user:history-refresh', payload.history || []);
+    existing.focus();
+    return;
+  }
+
+  const data: UserWindowData = {
+    broadcasterId: payload.broadcasterId,
+    broadcasterLogin: payload.broadcasterLogin,
+    broadcasterName: payload.broadcasterName,
+    moderatorUserId: payload.moderatorUserId,
+    moderatorLogin: payload.moderatorLogin,
+    userLogin: login,
+    userId: payload.userId,
+    displayName: payload.displayName || login,
+  };
+
+  userWindowBootstraps.set(key, { ...payload, userLogin: login });
+
+  const win = new BrowserWindow({
+    width: 520,
+    height: 700,
+    minWidth: 400,
+    minHeight: 480,
+    backgroundColor: '#0e0e10',
+    title: `User · ${data.displayName} · #${data.broadcasterLogin}`,
+    webPreferences: {
+      preload: preloadPath(),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  });
+
+  userWindows.set(key, win);
+  win.loadFile(rendererHtml('user', 'index.html'), {
+    query: {
+      broadcasterId: data.broadcasterId,
+      broadcasterLogin: data.broadcasterLogin,
+      broadcasterName: data.broadcasterName,
+      moderatorUserId: data.moderatorUserId,
+      moderatorLogin: data.moderatorLogin,
+      userLogin: data.userLogin,
+      userId: data.userId || '',
+      displayName: data.displayName || data.userLogin,
+      windowKey: key,
+    },
+  });
+
+  win.on('closed', () => {
+    userWindows.delete(key);
+    userWindowBootstraps.delete(key);
+  });
+}
+
+function forwardChatToUserWindows(broadcasterId: string, message: ChatMessage): void {
+  const login = (message.user || '').toLowerCase();
+  if (!login) return;
+  const key = userWindowKey(broadcasterId, login);
+  const win = userWindows.get(key);
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('user:chat-message', message);
+  }
+}
+
+
 function registerIpc(): void {
   ipcMain.handle('auth:get-status', async () => {
     const clientId = getClientId();
@@ -167,6 +254,11 @@ function registerIpc(): void {
       if (!win.isDestroyed()) win.close();
     }
     channelWindows.clear();
+    for (const win of userWindows.values()) {
+      if (!win.isDestroyed()) win.close();
+    }
+    userWindows.clear();
+    userWindowBootstraps.clear();
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.loadFile(rendererHtml('login', 'index.html'));
     }
@@ -187,6 +279,25 @@ function registerIpc(): void {
     openChannelWindow(data);
     return { ok: true };
   });
+
+  ipcMain.handle('users:open', async (_e, payload: OpenUserWindowPayload) => {
+    openUserWindow(payload);
+    return { ok: true };
+  });
+
+  ipcMain.handle('users:get-bootstrap', async (_e, windowKey: string) => {
+    return userWindowBootstraps.get(windowKey) || null;
+  });
+
+  ipcMain.handle(
+    'chat:forward-message',
+    async (_e, payload: { broadcasterId: string; message: ChatMessage }) => {
+      if (payload?.broadcasterId && payload.message) {
+        forwardChatToUserWindows(payload.broadcasterId, payload.message);
+      }
+      return { ok: true };
+    }
+  );
 
   ipcMain.handle('session:get-chat-credentials', async () => {
     const token = await ensureValidToken();

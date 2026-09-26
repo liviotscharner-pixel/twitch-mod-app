@@ -1,5 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ChannelWindowData, ChatSettings, ModeratedChannel, TwitchUser } from '../shared/types';
+import type {
+  ChannelWindowData,
+  ChatMessage,
+  ChatSettings,
+  ModeratedChannel,
+  OpenUserWindowPayload,
+  TwitchUser,
+} from '../shared/types';
 
 export interface TwitchModApi {
   getAuthStatus: () => Promise<{
@@ -17,6 +24,14 @@ export interface TwitchModApi {
   logout: () => Promise<{ ok: boolean }>;
   listChannels: () => Promise<{ channels: ModeratedChannel[]; user: TwitchUser }>;
   openChannel: (data: ChannelWindowData) => Promise<{ ok: boolean }>;
+  openUserWindow: (payload: OpenUserWindowPayload) => Promise<{ ok: boolean }>;
+  getUserBootstrap: (windowKey: string) => Promise<OpenUserWindowPayload | null>;
+  forwardChatMessage: (payload: {
+    broadcasterId: string;
+    message: ChatMessage;
+  }) => Promise<{ ok: boolean }>;
+  onUserChatMessage: (callback: (message: ChatMessage) => void) => () => void;
+  onUserHistoryRefresh: (callback: (history: ChatMessage[]) => void) => () => void;
   getChatCredentials: () => Promise<{ login: string; accessToken: string; clientId: string }>;
   timeout: (payload: {
     broadcasterId: string;
@@ -72,6 +87,24 @@ const api: TwitchModApi = {
   logout: () => ipcRenderer.invoke('auth:logout'),
   listChannels: () => ipcRenderer.invoke('channels:list'),
   openChannel: (data) => ipcRenderer.invoke('channels:open', data),
+  openUserWindow: (payload) => ipcRenderer.invoke('users:open', payload),
+  getUserBootstrap: (windowKey) => ipcRenderer.invoke('users:get-bootstrap', windowKey),
+  forwardChatMessage: (payload) => ipcRenderer.invoke('chat:forward-message', payload),
+  onUserChatMessage: (callback) => {
+    const handler = (_event: Electron.IpcRendererEvent, message: ChatMessage) => callback(message);
+    ipcRenderer.on('user:chat-message', handler);
+    return () => {
+      ipcRenderer.removeListener('user:chat-message', handler);
+    };
+  },
+  onUserHistoryRefresh: (callback) => {
+    const handler = (_event: Electron.IpcRendererEvent, history: ChatMessage[]) =>
+      callback(history);
+    ipcRenderer.on('user:history-refresh', handler);
+    return () => {
+      ipcRenderer.removeListener('user:history-refresh', handler);
+    };
+  },
   getChatCredentials: () => ipcRenderer.invoke('session:get-chat-credentials'),
   timeout: (payload) => ipcRenderer.invoke('mod:timeout', payload),
   ban: (payload) => ipcRenderer.invoke('mod:ban', payload),

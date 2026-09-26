@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' https: data:;" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1 id="userTitle">Benutzer</h1>
+      <div class="meta" id="userMeta"></div>
+    </div>
+    <span class="role-pill" id="rolePill" hidden></span>
+  </header>
+
+  <div class="layout">
+    <section class="chat-pane">
+      <div id="chatLog" class="chat-log" aria-live="polite"></div>
+      <p class="live-hint">Live: neue Nachrichten dieses Users erscheinen hier automatisch.</p>
+    </section>
+
+    <aside class="mod-pane">
+      <h2>Mod-Aktionen</h2>
+      <p class="target-line">Ziel: <strong id="targetLabel">—</strong></p>
+      <label class="field">
+        <span>Grund (optional)</span>
+        <input id="reason" type="text" placeholder="Grund…" autocomplete="off" />
+      </label>
+
+      <h3>Timeout</h3>
+      <div class="btn-row timeouts">
+        <button type="button" class="btn-timeout" data-seconds="10">10s</button>
+        <button type="button" class="btn-timeout" data-seconds="60">1m</button>
+        <button type="button" class="btn-timeout" data-seconds="600">10m</button>
+        <button type="button" class="btn-timeout" data-seconds="3600">1h</button>
+      </div>
+      <div class="custom-timeout">
+        <input id="customSeconds" type="number" min="1" max="1209600" placeholder="Sek." />
+        <button type="button" id="customTimeoutBtn" class="btn-timeout">Custom</button>
+      </div>
+
+      <h3>Sperren</h3>
+      <div class="btn-row">
+        <button type="button" id="banBtn" class="btn-ban">Ban</button>
+        <button type="button" id="unbanBtn" class="btn-secondary">Unban / Untimeout</button>
+      </div>
+
+      <div id="actionStatus" class="action-status" hidden></div>
+    </aside>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

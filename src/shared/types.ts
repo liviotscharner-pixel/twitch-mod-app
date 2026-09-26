@@ -58,6 +58,21 @@ export interface ChannelWindowData {
   moderatorLogin: string;
 }
 
+export interface UserWindowData {
+  broadcasterId: string;
+  broadcasterLogin: string;
+  broadcasterName: string;
+  moderatorUserId: string;
+  moderatorLogin: string;
+  userLogin: string;
+  userId?: string;
+  displayName?: string;
+}
+
+export interface OpenUserWindowPayload extends UserWindowData {
+  history: ChatMessage[];
+}
+
 export const TIMEOUT_PRESETS = [
   { label: '10s', seconds: 10 },
   { label: '1m', seconds: 60 },

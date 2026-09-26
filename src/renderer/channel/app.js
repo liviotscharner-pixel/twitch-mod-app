@@ -22,6 +22,43 @@
   let chatSettings = null;
   const irc = new window.TwitchIrc();
 
+  /** Ring buffer of chat messages seen in this channel session. */
+  const MESSAGE_BUFFER_MAX = 1000;
+  /** @type {Array<object>} */
+  const messageBuffer = [];
+
+  function pushToBuffer(msg) {
+    messageBuffer.push(msg);
+    if (messageBuffer.length > MESSAGE_BUFFER_MAX) {
+      messageBuffer.splice(0, messageBuffer.length - MESSAGE_BUFFER_MAX);
+    }
+  }
+
+  function historyForUser(userLogin) {
+    const login = String(userLogin || '').toLowerCase();
+    return messageBuffer.filter((m) => (m.user || '').toLowerCase() === login);
+  }
+
+  async function openUserWindowFor(msg) {
+    const userLogin = (msg.user || '').toLowerCase();
+    if (!userLogin) return;
+    try {
+      await window.twitchMod.openUserWindow({
+        broadcasterId,
+        broadcasterLogin,
+        broadcasterName,
+        moderatorUserId: moderatorId,
+        moderatorLogin,
+        userLogin,
+        userId: msg.userId || '',
+        displayName: msg.displayName || userLogin,
+        history: historyForUser(userLogin),
+      });
+    } catch (err) {
+      showAction(false, err.message || String(err));
+    }
+  }
+
   function setConn(state, text) {
     connStatus.className = 'conn ' + (state === 'ok' ? 'ok' : state === 'err' ? 'err' : '');
     connStatus.textContent = text;
@@ -31,14 +68,6 @@
     actionStatus.hidden = false;
     actionStatus.className = 'action-status ' + (ok ? 'ok' : 'err');
     actionStatus.textContent = text;
-  }
-
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
   }
 
   /**
@@ -74,6 +103,13 @@
 
   function appendMessage(msg) {
     const role = resolveChatRole(msg);
+    msg.role = role;
+    pushToBuffer(msg);
+
+    if (typeof window.twitchMod.forwardChatMessage === 'function') {
+      window.twitchMod.forwardChatMessage({ broadcasterId, message: msg }).catch(() => {});
+    }
+
     const div = document.createElement('div');
     div.className = `chat-line chat-block role-${role}`;
     div.dataset.messageId = msg.id;
@@ -99,11 +135,16 @@
     userSpan.className = 'user';
     userSpan.style.color = msg.color || '#efeff1';
     userSpan.textContent = msg.displayName;
-    userSpan.title = 'Als Mod-Ziel auswählen';
+    userSpan.title = 'Klick: als Ziel · Doppelklick: User-Fenster';
     userSpan.addEventListener('click', (e) => {
       e.stopPropagation();
       targetUser.value = msg.user;
       showAction(true, `Ziel: ${msg.displayName}`);
+    });
+    userSpan.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      openUserWindowFor(msg);
     });
 
     header.appendChild(timeSpan);
@@ -124,6 +165,11 @@
       selectedMsgEl.hidden = false;
       selectedMsgText.textContent = `${msg.displayName}: ${msg.message}`;
       targetUser.value = msg.user;
+    });
+
+    div.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      openUserWindowFor(msg);
     });
 
     chatLog.appendChild(div);
@@ -159,7 +205,6 @@
     if (!text) return;
     try {
       irc.sendChat(text);
-      // Optimistic local echo
       appendMessage({
         id: `local-${Date.now()}`,
         channel: broadcasterLogin,
@@ -284,10 +329,9 @@
       const mode = btn.dataset.mode;
       const on = !!chatSettings[mode];
       btn.classList.toggle('on', on);
-      const label = btn.textContent.replace(/ ✓$/, '');
-      btn.textContent = on ? label + ' ✓' : label.replace(/ ✓$/, '');
-      // reset base label once
-      if (!btn.dataset.label) btn.dataset.label = label.replace(/ ✓$/, '');
+      if (!btn.dataset.label) {
+        btn.dataset.label = btn.textContent.replace(/ ✓$/, '');
+      }
       btn.textContent = on ? btn.dataset.label + ' ✓' : btn.dataset.label;
     });
   }

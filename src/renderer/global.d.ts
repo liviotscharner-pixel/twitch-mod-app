@@ -1,3 +1,18 @@
+interface ChatMessageDto {
+  id: string;
+  channel: string;
+  user: string;
+  displayName: string;
+  userId?: string;
+  message: string;
+  timestamp: number;
+  color?: string;
+  badges?: string[];
+  role?: 'mod' | 'vip' | 'sub' | 'normal';
+  isAction?: boolean;
+  isSystem?: boolean;
+}
+
 interface TwitchModApi {
   getAuthStatus: () => Promise<{
     loggedIn: boolean;
@@ -28,6 +43,34 @@ interface TwitchModApi {
     moderatorUserId: string;
     moderatorLogin: string;
   }) => Promise<{ ok: boolean }>;
+  openUserWindow: (payload: {
+    broadcasterId: string;
+    broadcasterLogin: string;
+    broadcasterName: string;
+    moderatorUserId: string;
+    moderatorLogin: string;
+    userLogin: string;
+    userId?: string;
+    displayName?: string;
+    history: ChatMessageDto[];
+  }) => Promise<{ ok: boolean }>;
+  getUserBootstrap: (windowKey: string) => Promise<{
+    broadcasterId: string;
+    broadcasterLogin: string;
+    broadcasterName: string;
+    moderatorUserId: string;
+    moderatorLogin: string;
+    userLogin: string;
+    userId?: string;
+    displayName?: string;
+    history: ChatMessageDto[];
+  } | null>;
+  forwardChatMessage: (payload: {
+    broadcasterId: string;
+    message: ChatMessageDto;
+  }) => Promise<{ ok: boolean }>;
+  onUserChatMessage: (callback: (message: ChatMessageDto) => void) => () => void;
+  onUserHistoryRefresh: (callback: (history: ChatMessageDto[]) => void) => () => void;
   getChatCredentials: () => Promise<{ login: string; accessToken: string; clientId: string }>;
   timeout: (payload: {
     broadcasterId: string;

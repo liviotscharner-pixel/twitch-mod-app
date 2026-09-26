@@ -1,5 +1,6 @@
+import fs from 'fs';
 import path from 'path';
-import { app, BrowserWindow, ipcMain, session } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeImage, session } from 'electron';
 import dotenv from 'dotenv';
 import {
   login,
@@ -69,6 +70,21 @@ function rendererHtml(...parts: string[]): string {
   return path.join(__dirname, '..', 'renderer', ...parts);
 }
 
+/** App icon: prefer .ico on Windows, else PNG from project build/. */
+function appIconPath(): string {
+  const root = path.join(__dirname, '..', '..');
+  const ico = path.join(root, 'build', 'icon.ico');
+  const png = path.join(root, 'build', 'icon.png');
+  if (process.platform === 'win32' && fs.existsSync(ico)) return ico;
+  if (fs.existsSync(png)) return png;
+  return png;
+}
+
+function windowIconOptions(): { icon?: string } {
+  const icon = appIconPath();
+  return fs.existsSync(icon) ? { icon } : {};
+}
+
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
     width: 960,
@@ -77,6 +93,7 @@ function createMainWindow(): void {
     minHeight: 520,
     backgroundColor: '#171411',
     title: 'Twitchy',
+    ...windowIconOptions(),
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,
@@ -113,6 +130,7 @@ function openChannelWindow(data: ChannelWindowData): void {
     minHeight: 560,
     backgroundColor: '#171411',
     title: `Twitchy · ${data.broadcasterName}`,
+    ...windowIconOptions(),
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,
@@ -171,6 +189,7 @@ function openUserWindow(payload: OpenUserWindowPayload): void {
     minHeight: 480,
     backgroundColor: '#171411',
     title: `Twitchy · ${data.displayName} · #${data.broadcasterLogin}`,
+    ...windowIconOptions(),
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,
@@ -444,6 +463,15 @@ function registerIpc(): void {
 app.disableHardwareAcceleration();
 
 app.whenReady().then(() => {
+  // Taskbar / dock identity + icon (Windows AppUserModelId groups the shortcut)
+  app.setAppUserModelId('com.liviotscharner.twitchy');
+  const iconPath = appIconPath();
+  if (fs.existsSync(iconPath)) {
+    if (process.platform === 'darwin' && app.dock) {
+      app.dock.setIcon(nativeImage.createFromPath(iconPath));
+    }
+  }
+
   // Allow Twitch OAuth / Helix / IRC
   session.defaultSession.setPermissionRequestHandler((_wc, _perm, callback) => {
     callback(false);

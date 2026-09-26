@@ -12,6 +12,7 @@ import {
 } from './auth';
 import {
   getModeratedChannels,
+  withOwnChannel,
   banOrTimeoutUser,
   unbanUser,
   deleteChatMessage,
@@ -177,7 +178,8 @@ function registerIpc(): void {
     const clientId = getClientId();
     const user = getUser();
     if (!user) throw new Error('Nicht angemeldet.');
-    const channels = await getModeratedChannels(token, clientId, user.id);
+    const moderated = await getModeratedChannels(token, clientId, user.id);
+    const channels = withOwnChannel(user, moderated);
     return { channels, user };
   });
 

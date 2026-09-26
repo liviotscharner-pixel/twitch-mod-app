@@ -34,11 +34,17 @@ async function loadChannels() {
     listEl.hidden = false;
     for (const ch of channels) {
       const card = document.createElement('article');
-      card.className = 'card';
+      card.className = 'card' + (ch.is_own ? ' own' : '');
+
+      const badge = ch.is_own
+        ? '<span class="badge own-badge">Dein Kanal · Broadcaster</span>'
+        : '<span class="badge mod-badge">Moderator</span>';
+
       card.innerHTML = `
+        ${badge}
         <h2>${escapeHtml(ch.broadcaster_name)}</h2>
         <div class="login">@${escapeHtml(ch.broadcaster_login)}</div>
-        <button type="button">Kanal öffnen</button>
+        <button type="button">${ch.is_own ? 'Eigenen Kanal öffnen' : 'Kanal öffnen'}</button>
       `;
       card.querySelector('button').addEventListener('click', async () => {
         try {
@@ -46,6 +52,7 @@ async function loadChannels() {
             broadcasterId: ch.broadcaster_id,
             broadcasterLogin: ch.broadcaster_login,
             broadcasterName: ch.broadcaster_name,
+            // Broadcaster acts as moderator on their own channel (Helix allows this)
             moderatorUserId: currentUser.id,
             moderatorLogin: currentUser.login,
           });

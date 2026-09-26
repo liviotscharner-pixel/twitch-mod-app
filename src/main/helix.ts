@@ -1,5 +1,5 @@
 import { HELIX_BASE } from '../shared/constants';
-import type { ChatSettings, ModeratedChannel } from '../shared/types';
+import type { ChatSettings, ModeratedChannel, TwitchUser } from '../shared/types';
 
 async function helixRequest<T>(
   method: string,
@@ -113,6 +113,21 @@ export async function getModeratedChannels(
   } while (cursor);
 
   return channels;
+}
+
+/**
+ * Helix Get Moderated Channels never includes the caller's own channel.
+ * Prepend it (as broadcaster) and dedupe by broadcaster_id.
+ */
+export function withOwnChannel(user: TwitchUser, moderated: ModeratedChannel[]): ModeratedChannel[] {
+  const own: ModeratedChannel = {
+    broadcaster_id: user.id,
+    broadcaster_login: user.login,
+    broadcaster_name: user.display_name || user.login,
+    is_own: true,
+  };
+  const rest = moderated.filter((ch) => ch.broadcaster_id !== user.id);
+  return [own, ...rest];
 }
 
 export async function banOrTimeoutUser(

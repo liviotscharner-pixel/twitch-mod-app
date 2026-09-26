@@ -17,6 +17,7 @@ interface TwitchModApi {
       broadcaster_id: string;
       broadcaster_login: string;
       broadcaster_name: string;
+      is_own?: boolean;
     }>;
     user: { id: string; login: string; display_name: string };
   }>;

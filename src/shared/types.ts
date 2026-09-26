@@ -10,6 +10,8 @@ export interface ModeratedChannel {
   broadcaster_id: string;
   broadcaster_login: string;
   broadcaster_name: string;
+  /** True when this entry is the logged-in user's own channel (broadcaster). */
+  is_own?: boolean;
 }
 
 export interface AuthTokens {

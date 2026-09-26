@@ -41,27 +41,59 @@
       .replace(/"/g, '&quot;');
   }
 
+  /**
+   * Role priority: Mod/Broadcaster > VIP > Sub > Normal
+   * @returns {'mod'|'vip'|'sub'|'normal'}
+   */
+  function resolveChatRole(msg) {
+    const badges = Array.isArray(msg.badges) ? msg.badges.map((b) => String(b).toLowerCase()) : [];
+    const set = new Set(badges);
+    const isBroadcaster =
+      set.has('broadcaster') ||
+      (msg.user && broadcasterLogin && msg.user.toLowerCase() === broadcasterLogin.toLowerCase());
+    if (isBroadcaster || set.has('moderator') || set.has('mod')) return 'mod';
+    if (set.has('vip')) return 'vip';
+    if (set.has('subscriber') || set.has('founder')) return 'sub';
+    return 'normal';
+  }
+
+  const ROLE_LABELS = {
+    mod: 'Mod',
+    vip: 'VIP',
+    sub: 'Sub',
+    normal: 'Chat',
+  };
+
   function appendSystem(text) {
     const div = document.createElement('div');
-    div.className = 'chat-line system';
+    div.className = 'chat-line chat-block system';
     div.textContent = text;
     chatLog.appendChild(div);
     chatLog.scrollTop = chatLog.scrollHeight;
   }
 
   function appendMessage(msg) {
+    const role = resolveChatRole(msg);
     const div = document.createElement('div');
-    div.className = 'chat-line';
+    div.className = `chat-line chat-block role-${role}`;
     div.dataset.messageId = msg.id;
     div.dataset.user = msg.user;
+    div.dataset.role = role;
 
     const time = new Date(msg.timestamp);
     const hh = String(time.getHours()).padStart(2, '0');
     const mm = String(time.getMinutes()).padStart(2, '0');
 
+    const header = document.createElement('div');
+    header.className = 'chat-block-header';
+
     const timeSpan = document.createElement('span');
     timeSpan.className = 'time';
     timeSpan.textContent = `${hh}:${mm}`;
+
+    const badgeSpan = document.createElement('span');
+    badgeSpan.className = 'role-badge';
+    badgeSpan.textContent = ROLE_LABELS[role] || 'Chat';
 
     const userSpan = document.createElement('span');
     userSpan.className = 'user';
@@ -74,12 +106,15 @@
       showAction(true, `Ziel: ${msg.displayName}`);
     });
 
-    const body = document.createElement('span');
-    body.className = 'body';
-    body.textContent = (msg.isAction ? '* ' : ': ') + msg.message;
+    header.appendChild(timeSpan);
+    header.appendChild(badgeSpan);
+    header.appendChild(userSpan);
 
-    div.appendChild(timeSpan);
-    div.appendChild(userSpan);
+    const body = document.createElement('div');
+    body.className = 'body';
+    body.textContent = (msg.isAction ? '* ' : '') + msg.message;
+
+    div.appendChild(header);
     div.appendChild(body);
 
     div.addEventListener('click', () => {
@@ -132,6 +167,7 @@
         displayName: moderatorLogin,
         message: text,
         color: '#9147ff',
+        badges: ['moderator'],
         timestamp: Date.now(),
       });
       input.value = '';

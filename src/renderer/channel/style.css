@@ -44,20 +44,87 @@ html, body {
   line-height: 1.45;
 }
 .chat-line {
-  padding: 0.2rem 0.35rem;
-  border-radius: 4px;
   word-break: break-word;
 }
-.chat-line:hover { background: #18181b; }
-.chat-line.selected { background: rgba(145,71,255,.18); outline: 1px solid #9147ff; }
+.chat-block {
+  margin: 0.35rem 0;
+  padding: 0.45rem 0.65rem 0.5rem;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  border-left-width: 4px;
+  background: #18181b;
+  cursor: pointer;
+}
+.chat-block:hover { filter: brightness(1.08); }
+.chat-block.selected {
+  box-shadow: 0 0 0 2px rgba(145, 71, 255, 0.55);
+  background: #1f1a2a;
+}
+
+/* Role borders: Mod red, VIP purple, Sub blue, Normal green */
+.chat-block.role-mod {
+  border-color: #eb0400;
+  border-left-color: #eb0400;
+  background: linear-gradient(90deg, rgba(235, 4, 0, 0.12), #18181b 28%);
+}
+.chat-block.role-vip {
+  border-color: #bf94ff;
+  border-left-color: #9147ff;
+  background: linear-gradient(90deg, rgba(145, 71, 255, 0.14), #18181b 28%);
+}
+.chat-block.role-sub {
+  border-color: #1f69ff;
+  border-left-color: #1f69ff;
+  background: linear-gradient(90deg, rgba(31, 105, 255, 0.14), #18181b 28%);
+}
+.chat-block.role-normal {
+  border-color: #00a86b;
+  border-left-color: #00c864;
+  background: linear-gradient(90deg, rgba(0, 200, 100, 0.1), #18181b 28%);
+}
+
+.chat-block-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.2rem;
+}
+.chat-line .time { color: #5c5c66; font-size: 0.72rem; }
 .chat-line .user {
   font-weight: 700;
   cursor: pointer;
-  margin-right: 0.35rem;
 }
 .chat-line .user:hover { text-decoration: underline; }
-.chat-line .time { color: #5c5c66; font-size: 0.75rem; margin-right: 0.4rem; }
-.chat-line.system { color: #848494; font-style: italic; }
+.chat-line .body {
+  color: #efeff1;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+.role-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  opacity: 0.95;
+}
+.role-mod .role-badge { color: #ff8a86; background: rgba(235, 4, 0, 0.18); }
+.role-vip .role-badge { color: #d2b8ff; background: rgba(145, 71, 255, 0.2); }
+.role-sub .role-badge { color: #9db8ff; background: rgba(31, 105, 255, 0.2); }
+.role-normal .role-badge { color: #9dffc8; background: rgba(0, 200, 100, 0.15); }
+
+.chat-line.system {
+  color: #848494;
+  font-style: italic;
+  border-color: #3a3a3d;
+  border-left-color: #5c5c66;
+  background: #141416;
+  cursor: default;
+}
+.chat-line.system:hover { filter: none; }
 .chat-input-row {
   display: flex;
   gap: 0.5rem;

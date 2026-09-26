@@ -20,6 +20,8 @@ export interface AuthTokens {
   token_type?: string;
 }
 
+export type ChatRole = 'mod' | 'vip' | 'sub' | 'normal';
+
 export interface ChatMessage {
   id: string;
   channel: string;
@@ -29,7 +31,9 @@ export interface ChatMessage {
   message: string;
   timestamp: number;
   color?: string;
+  /** Twitch badge names from IRC tags, e.g. moderator, vip, subscriber, broadcaster */
   badges?: string[];
+  role?: ChatRole;
   isAction?: boolean;
   isSystem?: boolean;
 }

@@ -15,6 +15,15 @@
     return tags;
   }
 
+  /** @returns {string[]} badge names, e.g. ["broadcaster","subscriber"] */
+  function parseBadgeList(raw) {
+    if (!raw || raw === true) return [];
+    return String(raw)
+      .split(',')
+      .map((part) => part.split('/')[0].trim().toLowerCase())
+      .filter(Boolean);
+  }
+
   function parseIrcLine(line) {
     let rest = line;
     let tags = {};
@@ -117,6 +126,12 @@
         let text = msg.trailing;
         if (isAction) text = text.slice(8, -1);
 
+        const badges = parseBadgeList(msg.tags.badges);
+        // Twitch also sets boolean-ish tags; keep them in the list for role detection
+        if (msg.tags.mod === '1' && !badges.includes('moderator')) badges.push('moderator');
+        if (msg.tags.subscriber === '1' && !badges.includes('subscriber')) badges.push('subscriber');
+        if (msg.tags.vip === '1' && !badges.includes('vip')) badges.push('vip');
+
         if (this.onMessage) {
           this.onMessage({
             id,
@@ -126,6 +141,7 @@
             userId,
             message: text,
             color,
+            badges,
             timestamp: Number(msg.tags['tmi-sent-ts']) || Date.now(),
             isAction,
           });

@@ -66,3 +66,25 @@ code {
   color: #bf94ff;
 }
 .muted { margin-top: 0.85rem; font-size: 0.8rem; color: #848494; }
+
+.device-code {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  background: #1f1f23;
+  border: 1px dashed #9147ff;
+  border-radius: 10px;
+  text-align: center;
+}
+.device-code p {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+.device-code-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.6rem;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  color: #bf94ff;
+  margin: 0 !important;
+}

@@ -5,8 +5,12 @@ interface TwitchModApi {
     clientIdConfigured: boolean;
     storePath?: string;
     redirectUri?: string;
+    authMode?: 'device' | 'pkce';
   }>;
   login: () => Promise<{ user: { id: string; login: string; display_name: string } }>;
+  onDeviceCode: (
+    callback: (payload: { userCode: string; verificationUri: string }) => void
+  ) => () => void;
   logout: () => Promise<{ ok: boolean }>;
   listChannels: () => Promise<{
     channels: Array<{

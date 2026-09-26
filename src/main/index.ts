@@ -2,10 +2,11 @@ import path from 'path';
 import { app, BrowserWindow, ipcMain, session } from 'electron';
 import dotenv from 'dotenv';
 import {
-  loginWithPkce,
+  login,
   logout,
   ensureValidToken,
   getClientId,
+  getAuthMode,
   validateToken,
   fetchCurrentUser,
 } from './auth';
@@ -135,7 +136,7 @@ function registerIpc(): void {
         try {
           const u = await fetchCurrentUser(tokens.access_token, clientId);
           setUser(u);
-          return { loggedIn: true, user: u, clientIdConfigured: !!clientId, storePath: getStorePath() };
+          return { loggedIn: true, user: u, clientIdConfigured: !!clientId, storePath: getStorePath(), authMode: getAuthMode() };
         } catch {
           /* ignore */
         }
@@ -147,11 +148,12 @@ function registerIpc(): void {
       clientIdConfigured: !!clientId,
       storePath: getStorePath(),
       redirectUri: process.env.TWITCH_REDIRECT_URI || 'http://localhost:3847/callback',
+      authMode: getAuthMode(),
     };
   });
 
   ipcMain.handle('auth:login', async () => {
-    const result = await loginWithPkce();
+    const result = await login();
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.loadFile(rendererHtml('channels', 'index.html'));
     }

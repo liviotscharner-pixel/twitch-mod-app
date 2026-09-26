@@ -4,7 +4,9 @@ Desktop-App für Twitch-Moderatoren (Electron + TypeScript). Nach dem Login sieh
 
 ## Features
 
-- **Twitch-OAuth** (Authorization Code + PKCE), Callback über `http://localhost:3847/callback`
+- **Twitch-OAuth** in zwei Modi:
+  - **Public** (kein Secret): **Device Code Grant Flow**
+  - **Confidential** (mit Secret): Authorization Code + PKCE, Callback `http://localhost:3847/callback`
 - Liste der **moderierten Kanäle** (Helix `Get Moderated Channels`)
 - **Mehrere Kanal-Fenster** (je ein Electron-`BrowserWindow`)
 - Live-Chat über Twitch IRC WebSocket (`wss://irc-ws.chat.twitch.tv:443`)
@@ -23,16 +25,17 @@ Desktop-App für Twitch-Moderatoren (Electron + TypeScript). Nach dem Login sieh
 ## Twitch Developer Console einrichten
 
 1. Unter [dev.twitch.tv/console/apps](https://dev.twitch.tv/console/apps) eine neue Anwendung erstellen.
-2. **OAuth Redirect URLs** genau so eintragen:
+2. **Client-Typ** wählen:
+   - **Public / Öffentlich** (empfohlen für Desktop): **kein** Client Secret. Die App startet den **Device-Code-Flow** (Browser öffnet sich, Code eingeben / freigeben). Redirect-URI ist dafür nicht nötig.
+   - **Confidential**: Client Secret erzeugen und als `TWITCH_CLIENT_SECRET` in `.env` setzen. Dann nutzt die App Authorization Code + PKCE. Redirect URI genau so eintragen:
 
-   ```
-   http://localhost:3847/callback
-   ```
+     ```
+     http://localhost:3847/callback
+     ```
 
-3. **Client-Typ**
-   - **Public** (empfohlen für Desktop + PKCE): kein Client Secret nötig.
-   - **Confidential**: optional `TWITCH_CLIENT_SECRET` in `.env` setzen (App unterstützt beides).
-4. Die **Client ID** kopieren.
+3. Die **Client ID** kopieren.
+
+> Twitch verlangt für den Authorization-Code-Grant ein `client_secret`. Öffentliche Apps ohne Secret erhalten sonst `Invalid client credentials` – deshalb schaltet diese App ohne Secret automatisch auf Device Code um.
 
 ## Installation
 
@@ -40,6 +43,7 @@ Desktop-App für Twitch-Moderatoren (Electron + TypeScript). Nach dem Login sieh
 cd twitch-mod-app
 cp .env.example .env
 # .env bearbeiten: TWITCH_CLIENT_ID=...
+# Optional nur bei Confidential: TWITCH_CLIENT_SECRET=...
 npm install
 npm start
 ```
@@ -61,8 +65,23 @@ npm run build
 | Variable | Pflicht | Beschreibung |
 |----------|---------|--------------|
 | `TWITCH_CLIENT_ID` | ja | Client ID aus der Developer Console |
-| `TWITCH_REDIRECT_URI` | nein | Standard: `http://localhost:3847/callback` |
-| `TWITCH_CLIENT_SECRET` | nein | Nur bei Confidential Client |
+| `TWITCH_REDIRECT_URI` | nein | Standard: `http://localhost:3847/callback` (nur PKCE) |
+| `TWITCH_CLIENT_SECRET` | nein | Wenn gesetzt → Confidential/PKCE; wenn leer → Device Code |
+
+## Anmeldung
+
+### Public (kein Secret) – Device Code
+
+1. **Mit Twitch anmelden** klicken.
+2. Die App öffnet `twitch.tv/activate` im System-Browser und zeigt den **User-Code**.
+3. Bei Twitch einloggen und freigeben; die App pollt im Hintergrund bis zum Token.
+4. Danach erscheint die Liste der moderierten Kanäle.
+
+### Confidential (mit Secret) – PKCE
+
+1. **Mit Twitch anmelden** klicken.
+2. Browser öffnet die Twitch-Authorize-Seite; nach Freigabe landet der Callback auf `localhost:3847`.
+3. Fenster schließen und zur App zurückkehren.
 
 ## OAuth-Scopes
 
@@ -91,7 +110,7 @@ Speicherort der Config (ungefähr):
 
 ## Bedienung
 
-1. App starten → **Mit Twitch anmelden** (Browser öffnet sich).
+1. App starten → **Mit Twitch anmelden**.
 2. Nach erfolgreichem Login erscheint die Liste der moderierten Kanäle.
 3. **Kanal öffnen** → eigenes Fenster mit Chat und Mod-Panel.
 4. Chat-User anklicken = Mod-Ziel; Nachricht anklicken = für „Nachricht löschen“.

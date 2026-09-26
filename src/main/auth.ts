@@ -1,10 +1,11 @@
 import http from 'http';
 import { URL } from 'url';
-import { shell } from 'electron';
+import { BrowserWindow, shell } from 'electron';
 import {
   OAUTH_CALLBACK_PORT,
   OAUTH_REDIRECT_URI,
   TWITCH_AUTH_URL,
+  TWITCH_DEVICE_URL,
   TWITCH_TOKEN_URL,
   TWITCH_VALIDATE_URL,
 } from '../shared/constants';
@@ -15,6 +16,8 @@ import { helixGet } from './helix';
 
 let callbackServer: http.Server | null = null;
 
+export type AuthMode = 'device' | 'pkce';
+
 export function getClientId(): string {
   return (process.env.TWITCH_CLIENT_ID || '').replace(/^\uFEFF/, '').trim();
 }
@@ -24,8 +27,36 @@ export function getRedirectUri(): string {
 }
 
 export function getClientSecret(): string | undefined {
-  const s = (process.env.TWITCH_CLIENT_SECRET || '').trim();
+  const s = (process.env.TWITCH_CLIENT_SECRET || '').replace(/^\uFEFF/, '').trim();
   return s || undefined;
+}
+
+/** Public apps (no secret) use Device Code; Confidential apps use auth-code + PKCE. */
+export function getAuthMode(): AuthMode {
+  return getClientSecret() ? 'pkce' : 'device';
+}
+
+function scopesParam(): string {
+  return OAUTH_SCOPES.join(' ');
+}
+
+function formatTokenError(status: number, text: string): Error {
+  const lower = text.toLowerCase();
+  if (
+    status === 400 &&
+    (lower.includes('invalid client') ||
+      lower.includes('invalid client credentials') ||
+      lower.includes('client credentials'))
+  ) {
+    return new Error(
+      'Ungültige Client-Credentials (HTTP 400). Öffentliche Twitch-Apps haben kein Client Secret – ' +
+        'die App nutzt dann automatisch den Device-Code-Flow (kein Secret in .env). ' +
+        'Alternativ: App in der Twitch Developer Console auf „Confidential“ umstellen und ' +
+        'TWITCH_CLIENT_SECRET in .env setzen. Details: ' +
+        text
+    );
+  }
+  return new Error(`Token-Austausch fehlgeschlagen (${status}): ${text}`);
 }
 
 function htmlPage(title: string, message: string, ok: boolean): string {
@@ -35,6 +66,33 @@ function htmlPage(title: string, message: string, ok: boolean): string {
 .card{background:#18181b;padding:2rem 2.5rem;border-radius:12px;border:1px solid #2a2a2d;max-width:420px;text-align:center}
 h1{color:${color};font-size:1.25rem;margin:0 0 .75rem}p{margin:0;opacity:.9;line-height:1.5}</style></head>
 <body><div class="card"><h1>${title}</h1><p>${message}</p></div></body></html>`;
+}
+
+function notifyDeviceCode(userCode: string, verificationUri: string): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send('auth:device-code', {
+        userCode,
+        verificationUri,
+      });
+    }
+  }
+}
+
+function parseTokenResponse(data: {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  scope?: string[];
+  token_type?: string;
+}): AuthTokens {
+  return {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    expires_at: data.expires_in ? Date.now() + data.expires_in * 1000 : undefined,
+    scopes: data.scope,
+    token_type: data.token_type,
+  };
 }
 
 async function exchangeCode(
@@ -62,24 +120,18 @@ async function exchangeCode(
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Token-Austausch fehlgeschlagen (${res.status}): ${text}`);
+    throw formatTokenError(res.status, text);
   }
 
-  const data = (await res.json()) as {
-    access_token: string;
-    refresh_token?: string;
-    expires_in?: number;
-    scope?: string[];
-    token_type?: string;
-  };
-
-  return {
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
-    expires_at: data.expires_in ? Date.now() + data.expires_in * 1000 : undefined,
-    scopes: data.scope,
-    token_type: data.token_type,
-  };
+  return parseTokenResponse(
+    (await res.json()) as {
+      access_token: string;
+      refresh_token?: string;
+      expires_in?: number;
+      scope?: string[];
+      token_type?: string;
+    }
+  );
 }
 
 export async function fetchCurrentUser(accessToken: string, clientId: string): Promise<TwitchUser> {
@@ -139,6 +191,7 @@ export async function refreshAccessToken(): Promise<AuthTokens | null> {
 
   const next: AuthTokens = {
     access_token: data.access_token,
+    // DCF refresh tokens are one-time use; always prefer the new one when present
     refresh_token: data.refresh_token || tokens.refresh_token,
     expires_at: data.expires_in ? Date.now() + data.expires_in * 1000 : undefined,
     scopes: data.scope,
@@ -164,6 +217,143 @@ export async function ensureValidToken(): Promise<string> {
 
 export function logout(): void {
   clearSession();
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function requestDeviceCode(clientId: string): Promise<{
+  device_code: string;
+  expires_in: number;
+  interval: number;
+  user_code: string;
+  verification_uri: string;
+}> {
+  const body = new URLSearchParams({
+    client_id: clientId,
+    scopes: scopesParam(),
+  });
+
+  const res = await fetch(TWITCH_DEVICE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw formatTokenError(res.status, text);
+  }
+
+  return (await res.json()) as {
+    device_code: string;
+    expires_in: number;
+    interval: number;
+    user_code: string;
+    verification_uri: string;
+  };
+}
+
+async function pollDeviceToken(
+  clientId: string,
+  deviceCode: string,
+  intervalSec: number,
+  expiresInSec: number
+): Promise<AuthTokens> {
+  let intervalMs = Math.max(intervalSec, 1) * 1000;
+  const deadline = Date.now() + expiresInSec * 1000;
+
+  while (Date.now() < deadline) {
+    await sleep(intervalMs);
+
+    const body = new URLSearchParams({
+      client_id: clientId,
+      scopes: scopesParam(),
+      device_code: deviceCode,
+      grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+    });
+
+    const res = await fetch(TWITCH_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+
+    const text = await res.text();
+    let json: Record<string, unknown> = {};
+    try {
+      json = JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      /* non-JSON */
+    }
+
+    if (res.ok && typeof json.access_token === 'string') {
+      return parseTokenResponse(
+        json as {
+          access_token: string;
+          refresh_token?: string;
+          expires_in?: number;
+          scope?: string[];
+          token_type?: string;
+        }
+      );
+    }
+
+    const message = String(json.message || json.error || text || '').toLowerCase();
+
+    if (message.includes('authorization_pending')) {
+      continue;
+    }
+    if (message.includes('slow_down')) {
+      intervalMs += 1000;
+      continue;
+    }
+    if (message.includes('expired_token') || message.includes('expired')) {
+      throw new Error('Device-Code abgelaufen. Bitte erneut anmelden.');
+    }
+    if (message.includes('access_denied')) {
+      throw new Error('Anmeldung abgelehnt. Bitte erneut versuchen.');
+    }
+    if (message.includes('invalid device code')) {
+      throw new Error('Ungültiger Device-Code. Bitte erneut anmelden.');
+    }
+
+    throw formatTokenError(res.status, text);
+  }
+
+  throw new Error('Device-Code-Timeout. Bitte erneut anmelden.');
+}
+
+export async function loginWithDeviceCode(): Promise<{ user: TwitchUser; tokens: AuthTokens }> {
+  const clientId = getClientId();
+  if (!clientId) {
+    throw new Error(
+      'TWITCH_CLIENT_ID fehlt. Lege eine .env-Datei an (siehe .env.example) und trage deine Client ID ein.'
+    );
+  }
+
+  const device = await requestDeviceCode(clientId);
+  notifyDeviceCode(device.user_code, device.verification_uri);
+
+  try {
+    await shell.openExternal(device.verification_uri);
+  } catch (err) {
+    throw new Error(
+      `Browser konnte nicht geöffnet werden. Öffne manuell: ${device.verification_uri} und gib den Code ${device.user_code} ein. (${err})`
+    );
+  }
+
+  const tokens = await pollDeviceToken(
+    clientId,
+    device.device_code,
+    device.interval || 5,
+    device.expires_in || 1800
+  );
+  setTokens(tokens);
+  const user = await fetchCurrentUser(tokens.access_token, clientId);
+  setUser(user);
+  return { user, tokens };
 }
 
 function listenForCode(expectedState: string, authUrl: string): Promise<string> {
@@ -273,7 +463,7 @@ export async function loginWithPkce(): Promise<{ user: TwitchUser; tokens: AuthT
   authUrl.searchParams.set('client_id', clientId);
   authUrl.searchParams.set('redirect_uri', redirectUri);
   authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('scope', OAUTH_SCOPES.join(' '));
+  authUrl.searchParams.set('scope', scopesParam());
   authUrl.searchParams.set('state', state);
   authUrl.searchParams.set('code_challenge', challenge);
   authUrl.searchParams.set('code_challenge_method', 'S256');
@@ -284,4 +474,12 @@ export async function loginWithPkce(): Promise<{ user: TwitchUser; tokens: AuthT
   const user = await fetchCurrentUser(tokens.access_token, clientId);
   setUser(user);
   return { user, tokens };
+}
+
+/** Chooses Device Code (public) or Authorization Code + PKCE (confidential). */
+export async function login(): Promise<{ user: TwitchUser; tokens: AuthTokens }> {
+  if (getAuthMode() === 'device') {
+    return loginWithDeviceCode();
+  }
+  return loginWithPkce();
 }

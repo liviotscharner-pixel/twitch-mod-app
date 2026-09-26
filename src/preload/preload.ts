@@ -8,8 +8,12 @@ export interface TwitchModApi {
     clientIdConfigured: boolean;
     storePath?: string;
     redirectUri?: string;
+    authMode?: 'device' | 'pkce';
   }>;
   login: () => Promise<{ user: TwitchUser }>;
+  onDeviceCode: (
+    callback: (payload: { userCode: string; verificationUri: string }) => void
+  ) => () => void;
   logout: () => Promise<{ ok: boolean }>;
   listChannels: () => Promise<{ channels: ModeratedChannel[]; user: TwitchUser }>;
   openChannel: (data: ChannelWindowData) => Promise<{ ok: boolean }>;
@@ -55,6 +59,16 @@ export interface TwitchModApi {
 const api: TwitchModApi = {
   getAuthStatus: () => ipcRenderer.invoke('auth:get-status'),
   login: () => ipcRenderer.invoke('auth:login'),
+  onDeviceCode: (callback) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: { userCode: string; verificationUri: string }
+    ) => callback(payload);
+    ipcRenderer.on('auth:device-code', handler);
+    return () => {
+      ipcRenderer.removeListener('auth:device-code', handler);
+    };
+  },
   logout: () => ipcRenderer.invoke('auth:logout'),
   listChannels: () => ipcRenderer.invoke('channels:list'),
   openChannel: (data) => ipcRenderer.invoke('channels:open', data),

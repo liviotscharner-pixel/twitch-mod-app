@@ -20,6 +20,10 @@
     <p class="subtitle">Desktop-Tool für Moderatoren – Chat, Timeout &amp; Ban in eigenen Fenstern.</p>
 
     <div id="status" class="status" hidden></div>
+    <div id="deviceCodeBox" class="device-code" hidden>
+      <p>Gib diesen Code auf der Twitch-Seite ein (falls nicht vorausgefüllt):</p>
+      <p class="device-code-value" id="deviceCodeValue"></p>
+    </div>
 
     <button id="loginBtn" class="btn-primary" type="button">
       Mit Twitch anmelden
@@ -27,13 +31,14 @@
 
     <div class="hints">
       <h2>Voraussetzungen</h2>
-      <ul>
+      <ul id="hintsList">
         <li>Twitch-App in der <strong>Developer Console</strong> anlegen</li>
         <li><code>TWITCH_CLIENT_ID</code> in der Datei <code>.env</code> setzen</li>
-        <li>Redirect URI: <code id="redirectUri">http://localhost:3847/callback</code></li>
-        <li>Client-Typ: Public (PKCE) empfohlen – kein Secret nötig</li>
+        <li id="hintRedirect">Redirect URI: <code id="redirectUri">http://localhost:3847/callback</code> (nur Confidential / PKCE)</li>
+        <li id="hintClientType">Client-Typ: Public → Device-Code-Flow (kein Secret); Confidential → PKCE + Secret</li>
       </ul>
       <p class="muted" id="clientHint"></p>
+      <p class="muted" id="authModeHint"></p>
     </div>
   </main>
   <script src="app.js"></script>

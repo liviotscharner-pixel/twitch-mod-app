@@ -12,6 +12,24 @@
 
   const chatLog = document.getElementById('chatLog');
   const connStatus = document.getElementById('connStatus');
+
+  /** Sticky-scroll: auto-follow newest messages only when near bottom. */
+  const STICK_THRESHOLD_PX = 80;
+  let stickToBottom = true;
+
+  function isNearBottom() {
+    return chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight <= STICK_THRESHOLD_PX;
+  }
+
+  function scrollChatIfSticky() {
+    if (stickToBottom) {
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+  }
+
+  chatLog.addEventListener('scroll', () => {
+    stickToBottom = isNearBottom();
+  });
   const targetUser = document.getElementById('targetUser');
   const reasonInput = document.getElementById('reason');
   const actionStatus = document.getElementById('actionStatus');
@@ -98,7 +116,7 @@
     div.className = 'chat-line chat-block system';
     div.textContent = text;
     chatLog.appendChild(div);
-    chatLog.scrollTop = chatLog.scrollHeight;
+    scrollChatIfSticky();
   }
 
   function appendMessage(msg) {
@@ -176,7 +194,7 @@
     while (chatLog.children.length > 500) {
       chatLog.removeChild(chatLog.firstChild);
     }
-    chatLog.scrollTop = chatLog.scrollHeight;
+    scrollChatIfSticky();
   }
 
   irc.onMessage = appendMessage;

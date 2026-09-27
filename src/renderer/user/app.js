@@ -10,6 +10,25 @@
   let userId = params.get('userId') || '';
 
   const chatLog = document.getElementById('chatLog');
+
+  /** Sticky-scroll: auto-follow newest messages only when near bottom. */
+  const STICK_THRESHOLD_PX = 80;
+  let stickToBottom = true;
+
+  function isNearBottom() {
+    return chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight <= STICK_THRESHOLD_PX;
+  }
+
+  function scrollChatIfSticky() {
+    if (stickToBottom) {
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+  }
+
+  chatLog.addEventListener('scroll', () => {
+    stickToBottom = isNearBottom();
+  });
+
   const userTitle = document.getElementById('userTitle');
   const userMeta = document.getElementById('userMeta');
   const targetLabel = document.getElementById('targetLabel');
@@ -117,7 +136,7 @@
     chatLog.appendChild(div);
 
     if (!opts || opts.scroll !== false) {
-      chatLog.scrollTop = chatLog.scrollHeight;
+      scrollChatIfSticky();
     }
   }
 
@@ -127,7 +146,9 @@
       appendMessage(msg, { scroll: false });
     }
     showEmptyIfNeeded();
-    chatLog.scrollTop = chatLog.scrollHeight;
+    if (stickToBottom) {
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
   }
 
   async function doTimeout(seconds) {

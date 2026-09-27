@@ -25,3 +25,24 @@
   --role-sub: #7A9EC8;
   --role-normal: #79B86A;
 }
+
+/* Shared chat scrollbar (visible on Windows / Electron Chromium) */
+.chat-log {
+  scrollbar-width: thin;
+  scrollbar-color: var(--carrot) var(--raised);
+}
+.chat-log::-webkit-scrollbar {
+  width: 10px;
+}
+.chat-log::-webkit-scrollbar-track {
+  background: var(--raised);
+  border-radius: 8px;
+}
+.chat-log::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+  border: 2px solid var(--raised);
+}
+.chat-log::-webkit-scrollbar-thumb:hover {
+  background: var(--carrot);
+}

@@ -39,6 +39,8 @@
   let selectedMessageId = null;
   let chatSettings = null;
   const irc = new window.TwitchIrc();
+  /** @type {Map<string, {id:string,url:string}>} */
+  let bttvMap = new Map();
 
   /** Ring buffer of chat messages seen in this channel session. */
   const MESSAGE_BUFFER_MAX = 1000;
@@ -171,7 +173,11 @@
 
     const body = document.createElement('div');
     body.className = 'body';
-    body.textContent = (msg.isAction ? '* ' : '') + msg.message;
+    window.TwitchyEmotes.fillMessageBody(body, msg.message || '', {
+      emotesTag: msg.emotes || '',
+      bttvMap,
+      isAction: !!msg.isAction,
+    });
 
     div.appendChild(header);
     div.appendChild(body);
@@ -399,8 +405,25 @@
     });
   });
 
-  connectIrc();
-  loadSettings();
+  async function loadEmotes() {
+    try {
+      if (broadcasterId && window.TwitchyEmotes) {
+        window.TwitchyEmotes.invalidateChannelBttv(broadcasterId);
+        bttvMap = await window.TwitchyEmotes.getBttvMap(broadcasterId);
+      } else if (window.TwitchyEmotes) {
+        bttvMap = await window.TwitchyEmotes.getBttvMap('');
+      }
+    } catch (err) {
+      console.warn('BTTV Emotes laden fehlgeschlagen', err);
+      bttvMap = new Map();
+    }
+  }
+
+  (async function boot() {
+    await loadEmotes();
+    connectIrc();
+    loadSettings();
+  })();
 
   window.addEventListener('beforeunload', () => irc.disconnect());
 })();

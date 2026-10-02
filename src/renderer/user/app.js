@@ -38,6 +38,8 @@
 
   /** @type {Set<string>} */
   const seenIds = new Set();
+  /** @type {Map<string, {id:string,url:string}>} */
+  let bttvMap = new Map();
 
   const ROLE_LABELS = { mod: 'Mod', vip: 'VIP', sub: 'Sub', normal: 'Chat' };
 
@@ -129,7 +131,11 @@
 
     const body = document.createElement('div');
     body.className = 'body';
-    body.textContent = (msg.isAction ? '* ' : '') + (msg.message || '');
+    window.TwitchyEmotes.fillMessageBody(body, msg.message || '', {
+      emotesTag: msg.emotes || '',
+      bttvMap,
+      isAction: !!msg.isAction,
+    });
 
     div.appendChild(header);
     div.appendChild(body);
@@ -206,6 +212,18 @@
   updateHeader('normal');
 
   (async function init() {
+    try {
+      if (window.TwitchyEmotes && broadcasterId) {
+        window.TwitchyEmotes.invalidateChannelBttv(broadcasterId);
+        bttvMap = await window.TwitchyEmotes.getBttvMap(broadcasterId);
+      } else if (window.TwitchyEmotes) {
+        bttvMap = await window.TwitchyEmotes.getBttvMap('');
+      }
+    } catch (err) {
+      console.warn('BTTV Emotes laden fehlgeschlagen', err);
+      bttvMap = new Map();
+    }
+
     try {
       const boot = await window.twitchMod.getUserBootstrap(windowKey);
       if (boot) {

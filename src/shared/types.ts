@@ -37,6 +37,8 @@ export interface ChatMessage {
   badges?: string[];
   role?: ChatRole;
   isAction?: boolean;
+  /** Twitch IRC emotes= tag for native/global/channel emotes */
+  emotes?: string;
   isSystem?: boolean;
 }
 

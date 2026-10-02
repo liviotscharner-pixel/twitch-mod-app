@@ -144,6 +144,8 @@
             badges,
             timestamp: Number(msg.tags['tmi-sent-ts']) || Date.now(),
             isAction,
+            /** Twitch IRC emotes= tag (id:start-end,...) for native/channel emotes */
+            emotes: msg.tags.emotes && msg.tags.emotes !== true ? String(msg.tags.emotes) : '',
           });
         }
         return;

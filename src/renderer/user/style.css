@@ -103,6 +103,16 @@ html, body {
   line-height: 1.4;
   white-space: pre-wrap;
 }
+
+.chat-line .body .chat-emote {
+  display: inline-block;
+  height: 1.35em;
+  width: auto;
+  max-height: 1.5em;
+  vertical-align: middle;
+  margin: 0 0.08em;
+  object-fit: contain;
+}
 .role-badge {
   font-size: 0.65rem;
   font-weight: 700;

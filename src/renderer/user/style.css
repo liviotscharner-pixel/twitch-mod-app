@@ -214,3 +214,14 @@ html, body {
   border: 1px solid var(--danger);
   color: #F5B8AE;
 }
+
+/* Hervorgehobene Wörter (aus dem Hauptfenster) */
+.chat-line .body .hl-word {
+  border: 2px solid #ff3b3b;
+  border-radius: 4px;
+  padding: 0 2px;
+  margin: 0 1px;
+  background: rgba(255, 59, 59, 0.14);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}

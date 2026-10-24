@@ -82,3 +82,76 @@ logoutBtn.addEventListener('click', async () => {
 });
 
 loadChannels();
+
+// ---- Hervorgehobene Wörter ----
+const hlForm = document.getElementById('hlForm');
+const hlInput = document.getElementById('hlInput');
+const hlList = document.getElementById('hlList');
+const hlEmpty = document.getElementById('hlEmpty');
+const hlError = document.getElementById('hlError');
+let highlightWords = [];
+
+function showHlError(msg) {
+  hlError.hidden = !msg;
+  hlError.textContent = msg || '';
+}
+
+function renderHighlightWords() {
+  while (hlList.firstChild) hlList.removeChild(hlList.firstChild);
+  hlEmpty.hidden = highlightWords.length > 0;
+  for (const word of highlightWords) {
+    const li = document.createElement('li');
+    li.className = 'hl-chip';
+    const label = document.createElement('span');
+    label.textContent = word;
+    const rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'hl-remove';
+    rm.textContent = '×';
+    rm.title = `„${word}“ entfernen`;
+    rm.setAttribute('aria-label', `${word} entfernen`);
+    rm.addEventListener('click', () => {
+      saveHighlightWords(highlightWords.filter((w) => w !== word));
+    });
+    li.appendChild(label);
+    li.appendChild(rm);
+    hlList.appendChild(li);
+  }
+}
+
+async function saveHighlightWords(next) {
+  showHlError('');
+  try {
+    highlightWords = await window.twitchMod.setHighlightWords(next);
+    renderHighlightWords();
+  } catch (err) {
+    showHlError(err.message || String(err));
+  }
+}
+
+hlForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const word = hlInput.value.replace(/\s+/g, ' ').trim();
+  if (!word) return;
+  const exists = highlightWords.some((w) => w.toLocaleLowerCase() === word.toLocaleLowerCase());
+  hlInput.value = '';
+  hlInput.focus();
+  if (exists) return;
+  await saveHighlightWords([...highlightWords, word]);
+});
+
+if (typeof window.twitchMod.onHighlightWordsChanged === 'function') {
+  window.twitchMod.onHighlightWordsChanged((list) => {
+    highlightWords = Array.isArray(list) ? list : [];
+    renderHighlightWords();
+  });
+}
+
+(async function loadHighlightWords() {
+  try {
+    highlightWords = await window.twitchMod.getHighlightWords();
+  } catch (err) {
+    showHlError(err.message || String(err));
+  }
+  renderHighlightWords();
+})();

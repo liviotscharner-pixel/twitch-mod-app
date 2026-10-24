@@ -35,6 +35,19 @@
       <p>Keine Kanäle gefunden.</p>
       <p class="muted">Dein eigener Kanal sollte immer erscheinen. Prüfe Login und Verbindung.</p>
     </div>
+
+    <section class="highlights" aria-labelledby="hlTitle">
+      <h2 id="hlTitle">Hervorgehobene Wörter</h2>
+      <p class="muted">Diese Wörter und Sätze werden im Chat (Kanal- und User-Fenster) rot umrahmt. Gross-/Kleinschreibung egal.</p>
+      <form id="hlForm" class="hl-form" autocomplete="off">
+        <input type="text" id="hlInput" maxlength="100" placeholder="Wort oder Satz eingeben…" />
+        <button type="submit" id="hlAddBtn">Hinzufügen</button>
+      </form>
+      <div id="hlError" class="hl-error" hidden></div>
+      <ul id="hlList" class="hl-list"></ul>
+      <p id="hlEmpty" class="muted hl-empty">Noch keine Wörter hinterlegt.</p>
+    </section>
+
   </main>
   <script src="app.js"></script>
 </body>

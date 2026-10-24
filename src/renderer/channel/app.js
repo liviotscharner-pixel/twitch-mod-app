@@ -178,6 +178,7 @@
       bttvMap,
       isAction: !!msg.isAction,
     });
+    if (window.TwitchyHighlights) window.TwitchyHighlights.apply(body);
 
     div.appendChild(header);
     div.appendChild(body);
@@ -419,8 +420,26 @@
     }
   }
 
+  /** Hervorgehobene Wörter: initial laden + live Updates aus dem Hauptfenster. */
+  async function loadHighlights() {
+    if (!window.TwitchyHighlights || !window.twitchMod.getHighlightWords) return;
+    try {
+      window.TwitchyHighlights.setWords(await window.twitchMod.getHighlightWords());
+    } catch (err) {
+      console.warn('Hervorgehobene Wörter laden fehlgeschlagen', err);
+    }
+  }
+
+  if (window.TwitchyHighlights && typeof window.twitchMod.onHighlightWordsChanged === 'function') {
+    window.twitchMod.onHighlightWordsChanged((list) => {
+      window.TwitchyHighlights.setWords(list);
+      window.TwitchyHighlights.applyAll(chatLog);
+      scrollChatIfSticky();
+    });
+  }
+
   (async function boot() {
-    await loadEmotes();
+    await Promise.all([loadEmotes(), loadHighlights()]);
     connectIrc();
     loadSettings();
   })();

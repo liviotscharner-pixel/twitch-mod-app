@@ -23,6 +23,7 @@ import {
   resolveUserId,
 } from './helix';
 import { getTokens, getUser, setUser, getStorePath } from './store';
+import { getHighlightWords, setHighlightWords } from './highlights';
 import type {
   ChannelWindowData,
   ChatMessage,
@@ -230,7 +231,21 @@ function forwardChatToUserWindows(broadcasterId: string, message: ChatMessage): 
 }
 
 
+function broadcastHighlightWords(words: string[]): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.webContents.send('highlights:changed', words);
+  }
+}
+
 function registerIpc(): void {
+  ipcMain.handle('highlights:get', async () => getHighlightWords());
+
+  ipcMain.handle('highlights:set', async (_e, words: unknown) => {
+    const list = setHighlightWords(words);
+    broadcastHighlightWords(list);
+    return list;
+  });
+
   ipcMain.handle('auth:get-status', async () => {
     const clientId = getClientId();
     const tokens = getTokens();

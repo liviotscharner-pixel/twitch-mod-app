@@ -69,6 +69,9 @@ export interface TwitchModApi {
     moderatorId: string;
     settings: Partial<ChatSettings>;
   }) => Promise<ChatSettings>;
+  getHighlightWords: () => Promise<string[]>;
+  setHighlightWords: (words: string[]) => Promise<string[]>;
+  onHighlightWordsChanged: (callback: (words: string[]) => void) => () => void;
 }
 
 const api: TwitchModApi = {
@@ -113,6 +116,15 @@ const api: TwitchModApi = {
   clearChat: (payload) => ipcRenderer.invoke('mod:clear-chat', payload),
   getChatSettings: (payload) => ipcRenderer.invoke('mod:get-chat-settings', payload),
   updateChatSettings: (payload) => ipcRenderer.invoke('mod:update-chat-settings', payload),
+  getHighlightWords: () => ipcRenderer.invoke('highlights:get'),
+  setHighlightWords: (words) => ipcRenderer.invoke('highlights:set', words),
+  onHighlightWordsChanged: (callback) => {
+    const handler = (_event: Electron.IpcRendererEvent, words: string[]) => callback(words);
+    ipcRenderer.on('highlights:changed', handler);
+    return () => {
+      ipcRenderer.removeListener('highlights:changed', handler);
+    };
+  },
 };
 
 contextBridge.exposeInMainWorld('twitchMod', api);

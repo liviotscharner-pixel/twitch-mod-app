@@ -116,6 +116,9 @@ interface TwitchModApi {
     moderatorId: string;
     settings: Record<string, unknown>;
   }) => Promise<unknown>;
+  getHighlightWords: () => Promise<string[]>;
+  setHighlightWords: (words: string[]) => Promise<string[]>;
+  onHighlightWordsChanged: (callback: (words: string[]) => void) => () => void;
 }
 
 interface Window {

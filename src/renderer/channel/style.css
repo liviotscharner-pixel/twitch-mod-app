@@ -486,6 +486,7 @@ html, body {
 .members-user.role-mod { border-left-color: var(--role-mod); color: #F5B8AE; }
 .members-user.role-vip { border-left-color: var(--role-vip); color: #EBD0E2; }
 .members-user.role-sub { border-left-color: var(--role-sub); color: #C5D6EA; }
+.members-user.role-bot { border-left-color: var(--role-bot); color: #D9CBB6; }
 .members-user.role-normal { border-left-color: var(--role-normal); color: #C5E8B8; }
 
 .layout.members-collapsed .members-open { display: none; }

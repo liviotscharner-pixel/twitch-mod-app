@@ -449,6 +449,7 @@
       broadcasterId,
       broadcasterLogin,
       moderatorId,
+      moderatorLogin,
       onSelect: (user) => {
         targetUser.value = user.userLogin;
         showAction(true, `Ziel: ${user.displayName}`);

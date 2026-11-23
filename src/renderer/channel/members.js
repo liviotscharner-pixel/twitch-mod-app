@@ -3,10 +3,27 @@
   const STORAGE_GROUPS = 'twitchy.membersGroupCollapsed';
   const REFRESH_MS = 60000;
 
+  /** Known chat bots — extend here. A bot that is also a mod still goes into Bots. */
+  const KNOWN_CHAT_BOTS = [
+    'streamelements',
+    'nightbot',
+    'moobot',
+    'fossabot',
+    'wizebot',
+    'streamlabs',
+    'soundalerts',
+    'sery_bot',
+    'commanderroot',
+    'botrixoficial',
+    'kofistreambot',
+  ];
+  const KNOWN_BOT_SET = new Set(KNOWN_CHAT_BOTS);
+
   const GROUPS = [
     { id: 'broadcaster', label: 'Broadcaster' },
     { id: 'moderator', label: 'Moderatoren' },
     { id: 'vip', label: 'VIPs' },
+    { id: 'bot', label: 'Bots' },
     { id: 'viewer', label: 'Zuschauer' },
   ];
 
@@ -69,6 +86,7 @@
      *   broadcasterId: string,
      *   broadcasterLogin: string,
      *   moderatorId: string,
+     *   moderatorLogin: string,
      *   onSelect: (user: { userLogin: string, displayName: string, userId?: string }) => void,
      *   onOpen: (user: { userLogin: string, displayName: string, userId?: string }) => void,
      * }} opts
@@ -90,6 +108,7 @@
       if (!layout || !pane || !listEl) return;
 
       const broadcasterLogin = String(opts.broadcasterLogin || '').toLowerCase();
+      const moderatorLogin = String(opts.moderatorLogin || '').toLowerCase();
       /** @type {{ userId: string, userLogin: string, displayName: string }[]} */
       let chatters = [];
       /** @type {Set<string>} */
@@ -149,21 +168,32 @@
         return badges.has('subscriber') || badges.has('founder') || (info && info.role === 'sub');
       }
 
+      function isBot(login, info) {
+        if (KNOWN_BOT_SET.has(login)) return true;
+        const badges = badgeSet(info && info.badges);
+        return badges.has('bot') || badges.has('twitchbot');
+      }
+
       function classify(chatter) {
         const login = String(chatter.userLogin || '').toLowerCase();
         const info = seen.get(login) || {};
         const isBroadcaster = login === broadcasterLogin;
-        const isMod = isBroadcaster || modLogins.has(login) || isModFromSeen(login, info);
+        const bot = !isBroadcaster && isBot(login, info);
+        const isSelfMod = !isBroadcaster && !!moderatorLogin && login === moderatorLogin;
+        const isMod =
+          isBroadcaster || isSelfMod || modLogins.has(login) || isModFromSeen(login, info);
         const isVip = vipLogins.has(login) || isVipFromSeen(login, info);
         const isSub = isSubFromSeen(info);
 
         let group = 'viewer';
         if (isBroadcaster) group = 'broadcaster';
+        else if (bot) group = 'bot';
         else if (isMod) group = 'moderator';
         else if (isVip) group = 'vip';
 
         let role = 'normal';
-        if (isBroadcaster || isMod) role = 'mod';
+        if (isBroadcaster || (isMod && !bot)) role = 'mod';
+        else if (bot) role = 'bot';
         else if (isVip) role = 'vip';
         else if (isSub) role = 'sub';
 
@@ -293,6 +323,7 @@
           const res = await window.twitchMod.getMemberList({
             broadcasterId: opts.broadcasterId,
             moderatorId: opts.moderatorId,
+            broadcasterLogin: opts.broadcasterLogin,
           });
           if (res && res.needsRelogin) {
             chatters = [];

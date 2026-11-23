@@ -80,6 +80,7 @@ export interface TwitchModApi {
   getMemberList: (payload: {
     broadcasterId: string;
     moderatorId: string;
+    broadcasterLogin?: string;
   }) => Promise<MemberListResult>;
 }
 

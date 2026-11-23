@@ -26,6 +26,7 @@ import {
   tryGetVipLogins,
   isMissingScopeError,
 } from './helix';
+import { getChannelVipLogins, getModeratorLoginsAmong } from './gql';
 import { getTokens, getUser, setUser, getStorePath } from './store';
 import { getHighlightWords, setHighlightWords } from './highlights';
 import type {
@@ -351,7 +352,7 @@ function registerIpc(): void {
     'members:list',
     async (
       _e,
-      payload: { broadcasterId: string; moderatorId: string }
+      payload: { broadcasterId: string; moderatorId: string; broadcasterLogin?: string }
     ): Promise<MemberListResult> => {
       const token = await ensureValidToken();
       const clientId = getClientId();
@@ -373,14 +374,35 @@ function registerIpc(): void {
           tryGetModeratorLogins(token, clientId, payload.broadcasterId),
           tryGetVipLogins(token, clientId, payload.broadcasterId),
         ]);
+
+        const modSet = new Set(modsRes.logins || []);
+        const vipSet = new Set(vipsRes.logins || []);
+
+        // Helix mods/VIPs often only work with the broadcaster token.
+        // Merge public GQL sources so a moderator still gets complete groups.
+        const chatterLogins = (chattersRes.chatters || []).map((c) => c.userLogin);
+        const gqlVipPromise = payload.broadcasterLogin
+          ? getChannelVipLogins(payload.broadcasterLogin)
+          : Promise.resolve([] as string[]);
+        try {
+          const [gqlVips, gqlMods] = await Promise.all([
+            gqlVipPromise,
+            getModeratorLoginsAmong(payload.broadcasterId, chatterLogins),
+          ]);
+          for (const login of gqlVips) vipSet.add(login);
+          for (const login of gqlMods) modSet.add(login);
+        } catch (err) {
+          console.warn('GQL Rollenquelle fehlgeschlagen:', err);
+        }
+
         return {
           ok: true,
           total: chattersRes.total,
           chatters: chattersRes.chatters,
-          moderatorLogins: modsRes.logins,
-          vipLogins: vipsRes.logins,
-          modsFromApi: modsRes.fromApi,
-          vipsFromApi: vipsRes.fromApi,
+          moderatorLogins: [...modSet],
+          vipLogins: [...vipSet],
+          modsFromApi: modsRes.fromApi || modSet.size > 0,
+          vipsFromApi: vipsRes.fromApi || vipSet.size > 0,
         };
       } catch (err) {
         if (isMissingScopeError(err)) {

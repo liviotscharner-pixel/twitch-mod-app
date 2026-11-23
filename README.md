@@ -10,6 +10,7 @@ Desktop-App für Twitch-Moderatoren (Electron + TypeScript). Nach dem Login sieh
 - Liste der **moderierten Kanäle** (Helix `Get Moderated Channels`)
 - **Mehrere Kanal-Fenster** (je ein Electron-`BrowserWindow`)
 - Live-Chat über Twitch IRC WebSocket (`wss://irc-ws.chat.twitch.tv:443`)
+- **Memberliste** im Kanal-Fenster (aufklappbar, Suche, Gruppen Broadcaster / Moderatoren / VIPs / Zuschauer) über Helix `Get Chatters`
 - **Timeout** (grün): 10s, 1m, 10m, 1h + Custom
 - **Ban** (rot), Unban/Untimeout
 - Nachricht löschen, Chat leeren

@@ -125,6 +125,12 @@
     const role = resolveChatRole(msg);
     msg.role = role;
     pushToBuffer(msg);
+    if (window.TwitchyMembers && window.TwitchyMembers.noteUser) {
+      const changed = window.TwitchyMembers.noteUser(msg);
+      if (changed && typeof window.TwitchyMembers.refresh === 'function') {
+        window.TwitchyMembers.refresh();
+      }
+    }
 
     if (typeof window.twitchMod.forwardChatMessage === 'function') {
       window.twitchMod.forwardChatMessage({ broadcasterId, message: msg }).catch(() => {});
@@ -435,6 +441,25 @@
       window.TwitchyHighlights.setWords(list);
       window.TwitchyHighlights.applyAll(chatLog);
       scrollChatIfSticky();
+    });
+  }
+
+  if (window.TwitchyMembers && typeof window.TwitchyMembers.init === 'function') {
+    window.TwitchyMembers.init({
+      broadcasterId,
+      broadcasterLogin,
+      moderatorId,
+      onSelect: (user) => {
+        targetUser.value = user.userLogin;
+        showAction(true, `Ziel: ${user.displayName}`);
+      },
+      onOpen: (user) => {
+        openUserWindowFor({
+          user: user.userLogin,
+          userId: user.userId || '',
+          displayName: user.displayName || user.userLogin,
+        });
+      },
     });
   }
 

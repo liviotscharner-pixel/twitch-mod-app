@@ -17,7 +17,7 @@
     <div class="conn" id="connStatus">Verbinde…</div>
   </header>
 
-  <div class="layout">
+  <div class="layout" id="layout">
     <section class="chat-pane">
       <div id="chatLog" class="chat-log" aria-live="polite"></div>
       <form id="chatForm" class="chat-input-row">
@@ -25,6 +25,28 @@
         <button type="submit" class="btn-send">Senden</button>
       </form>
     </section>
+
+    <aside class="members-pane" id="membersPane">
+      <button type="button" id="membersExpand" class="members-expand" aria-expanded="true" title="Memberliste aufklappen">
+        <span class="members-expand-label">Memberliste</span>
+        <span id="membersStripCount" class="members-strip-count">–</span>
+      </button>
+      <div class="members-open">
+        <div class="members-header">
+          <h2>Memberliste <span id="membersCount" class="members-count"></span></h2>
+          <button type="button" id="membersRefresh" class="btn-tiny members-icon-btn" title="Aktualisieren">↻</button>
+          <button type="button" id="membersToggle" class="btn-tiny members-icon-btn" aria-expanded="true" title="Memberliste zuklappen">»</button>
+        </div>
+        <div class="members-body" id="membersBody">
+          <input id="membersSearch" type="search" placeholder="Suchen…" autocomplete="off" />
+          <div id="membersStatus" class="members-status" hidden></div>
+          <div id="membersRelogin" class="members-relogin" hidden>
+            <button type="button" id="membersReloginBtn" class="btn-secondary">Neu anmelden</button>
+          </div>
+          <div id="membersList" class="members-list"></div>
+        </div>
+      </div>
+    </aside>
 
     <aside class="mod-pane">
       <h2>Mod-Ziel</h2>
@@ -82,6 +104,7 @@
   <script src="../shared/emotes.js"></script>
   <script src="../shared/highlights.js"></script>
   <script src="irc.js"></script>
+  <script src="members.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

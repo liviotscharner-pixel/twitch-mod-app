@@ -21,6 +21,10 @@ import {
   getChatSettings,
   updateChatSettings,
   resolveUserId,
+  getChatters,
+  tryGetModeratorLogins,
+  tryGetVipLogins,
+  isMissingScopeError,
 } from './helix';
 import { getTokens, getUser, setUser, getStorePath } from './store';
 import { getHighlightWords, setHighlightWords } from './highlights';
@@ -28,9 +32,11 @@ import type {
   ChannelWindowData,
   ChatMessage,
   ChatSettings,
+  MemberListResult,
   OpenUserWindowPayload,
   UserWindowData,
 } from '../shared/types';
+import { CHATTERS_SCOPE } from '../shared/types';
 
 // Load .env from project root (cwd when npm start) and next to packaged app
 function loadEnv(): void {
@@ -125,9 +131,9 @@ function openChannelWindow(data: ChannelWindowData): void {
   }
 
   const win = new BrowserWindow({
-    width: 1100,
+    width: 1280,
     height: 780,
-    minWidth: 800,
+    minWidth: 900,
     minHeight: 560,
     backgroundColor: '#171411',
     title: `Twitchy · ${data.broadcasterName}`,
@@ -251,19 +257,29 @@ function registerIpc(): void {
     const tokens = getTokens();
     const user = getUser();
     let valid = false;
+    let v: Awaited<ReturnType<typeof validateToken>> = null;
     if (tokens?.access_token && clientId) {
-      const v = await validateToken(tokens.access_token);
+      v = await validateToken(tokens.access_token);
       valid = !!v;
       if (valid && !user) {
         try {
           const u = await fetchCurrentUser(tokens.access_token, clientId);
           setUser(u);
-          return { loggedIn: true, user: u, clientIdConfigured: !!clientId, storePath: getStorePath(), authMode: getAuthMode() };
+          return {
+            loggedIn: true,
+            user: u,
+            clientIdConfigured: !!clientId,
+            storePath: getStorePath(),
+            authMode: getAuthMode(),
+            scopes: v?.scopes || [],
+            needsChattersScope: !(v?.scopes || []).includes(CHATTERS_SCOPE),
+          };
         } catch {
           /* ignore */
         }
       }
     }
+    const scopes = valid && v ? v.scopes || [] : [];
     return {
       loggedIn: valid && !!user,
       user: valid ? getUser() : null,
@@ -271,6 +287,8 @@ function registerIpc(): void {
       storePath: getStorePath(),
       redirectUri: process.env.TWITCH_REDIRECT_URI || 'http://localhost:3847/callback',
       authMode: getAuthMode(),
+      scopes,
+      needsChattersScope: !scopes.includes(CHATTERS_SCOPE),
     };
   });
 
@@ -279,7 +297,22 @@ function registerIpc(): void {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.loadFile(rendererHtml('channels', 'index.html'));
     }
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) win.webContents.send('auth:session-updated');
+    }
     return { user: result.user };
+  });
+
+  ipcMain.handle('auth:relogin', async () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      await mainWindow.loadFile(rendererHtml('login', 'index.html'), {
+        query: { autologin: '1' },
+      });
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+    return { ok: true };
   });
 
   ipcMain.handle('auth:logout', async () => {
@@ -313,6 +346,55 @@ function registerIpc(): void {
     openChannelWindow(data);
     return { ok: true };
   });
+
+  ipcMain.handle(
+    'members:list',
+    async (
+      _e,
+      payload: { broadcasterId: string; moderatorId: string }
+    ): Promise<MemberListResult> => {
+      const token = await ensureValidToken();
+      const clientId = getClientId();
+      const tokens = getTokens();
+      const validated = await validateToken(token);
+      const scopes = validated?.scopes || tokens?.scopes || [];
+
+      if (!scopes.includes(CHATTERS_SCOPE)) {
+        return {
+          ok: false,
+          needsRelogin: true,
+          message: 'Für die Memberliste bitte neu anmelden',
+        };
+      }
+
+      try {
+        const [chattersRes, modsRes, vipsRes] = await Promise.all([
+          getChatters(token, clientId, payload.broadcasterId, payload.moderatorId),
+          tryGetModeratorLogins(token, clientId, payload.broadcasterId),
+          tryGetVipLogins(token, clientId, payload.broadcasterId),
+        ]);
+        return {
+          ok: true,
+          total: chattersRes.total,
+          chatters: chattersRes.chatters,
+          moderatorLogins: modsRes.logins,
+          vipLogins: vipsRes.logins,
+          modsFromApi: modsRes.fromApi,
+          vipsFromApi: vipsRes.fromApi,
+        };
+      } catch (err) {
+        if (isMissingScopeError(err)) {
+          return {
+            ok: false,
+            needsRelogin: true,
+            message: 'Für die Memberliste bitte neu anmelden',
+          };
+        }
+        const message = err instanceof Error ? err.message : String(err);
+        return { ok: false, message: `Memberliste: ${message}` };
+      }
+    }
+  );
 
   ipcMain.handle('users:open', async (_e, payload: OpenUserWindowPayload) => {
     openUserWindow(payload);

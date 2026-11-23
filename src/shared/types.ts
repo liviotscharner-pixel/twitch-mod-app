@@ -82,6 +82,10 @@ export const TIMEOUT_PRESETS = [
   { label: '1h', seconds: 3600 },
 ] as const;
 
+export const CHATTERS_SCOPE = 'moderator:read:chatters';
+export const MODERATORS_SCOPE = 'moderation:read';
+export const VIPS_SCOPE = 'channel:read:vips';
+
 export const OAUTH_SCOPES = [
   'user:read:email',
   'user:read:moderated_channels',
@@ -91,4 +95,27 @@ export const OAUTH_SCOPES = [
   'moderator:read:chat_settings',
   'chat:read',
   'chat:edit',
+  CHATTERS_SCOPE,
+  MODERATORS_SCOPE,
+  VIPS_SCOPE,
 ] as const;
+
+export interface ChatChatter {
+  userId: string;
+  userLogin: string;
+  displayName: string;
+}
+
+export type MemberGroup = 'broadcaster' | 'moderator' | 'vip' | 'viewer';
+
+export interface MemberListResult {
+  ok: boolean;
+  needsRelogin?: boolean;
+  message?: string;
+  total?: number;
+  chatters?: ChatChatter[];
+  moderatorLogins?: string[];
+  vipLogins?: string[];
+  modsFromApi?: boolean;
+  vipsFromApi?: boolean;
+}

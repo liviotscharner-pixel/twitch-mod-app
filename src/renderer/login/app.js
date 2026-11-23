@@ -48,7 +48,7 @@ async function init() {
       clientHint.textContent = 'Client ID: nicht konfiguriert';
     } else {
       clientHint.textContent = 'Client ID: konfiguriert ✓';
-      if (status.loggedIn && status.user) {
+      if (status.loggedIn && status.user && new URLSearchParams(window.location.search).get('autologin') !== '1') {
         showStatus('ok', `Bereits angemeldet als ${status.user.display_name}. Lade Kanäle…`);
       }
     }
@@ -57,7 +57,7 @@ async function init() {
   }
 }
 
-loginBtn.addEventListener('click', async () => {
+async function startLogin() {
   loginBtn.disabled = true;
   hideDeviceCode();
 
@@ -99,6 +99,18 @@ loginBtn.addEventListener('click', async () => {
       unsubscribeDeviceCode = null;
     }
   }
+}
+
+loginBtn.addEventListener('click', () => {
+  startLogin();
 });
 
-init();
+const params = new URLSearchParams(window.location.search);
+const autoLogin = params.get('autologin') === '1';
+
+init().then(() => {
+  if (autoLogin && !loginBtn.disabled) {
+    showStatus('info', 'Für die Memberliste bitte neu anmelden – Anmeldung startet…');
+    startLogin();
+  }
+});

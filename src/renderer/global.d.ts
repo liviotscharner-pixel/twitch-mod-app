@@ -21,8 +21,12 @@ interface TwitchModApi {
     storePath?: string;
     redirectUri?: string;
     authMode?: 'device' | 'pkce';
+    scopes?: string[];
+    needsChattersScope?: boolean;
   }>;
   login: () => Promise<{ user: { id: string; login: string; display_name: string } }>;
+  relogin: () => Promise<{ ok: boolean }>;
+  onSessionUpdated: (callback: () => void) => () => void;
   onDeviceCode: (
     callback: (payload: { userCode: string; verificationUri: string }) => void
   ) => () => void;
@@ -119,6 +123,20 @@ interface TwitchModApi {
   getHighlightWords: () => Promise<string[]>;
   setHighlightWords: (words: string[]) => Promise<string[]>;
   onHighlightWordsChanged: (callback: (words: string[]) => void) => () => void;
+  getMemberList: (payload: {
+    broadcasterId: string;
+    moderatorId: string;
+  }) => Promise<{
+    ok: boolean;
+    needsRelogin?: boolean;
+    message?: string;
+    total?: number;
+    chatters?: Array<{ userId: string; userLogin: string; displayName: string }>;
+    moderatorLogins?: string[];
+    vipLogins?: string[];
+    modsFromApi?: boolean;
+    vipsFromApi?: boolean;
+  }>;
 }
 
 interface Window {

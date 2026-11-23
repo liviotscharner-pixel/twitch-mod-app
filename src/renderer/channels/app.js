@@ -83,6 +83,41 @@ logoutBtn.addEventListener('click', async () => {
 
 loadChannels();
 
+const scopeBanner = document.getElementById('scopeBanner');
+const reloginBtn = document.getElementById('reloginBtn');
+
+async function checkMemberListScope() {
+  if (!scopeBanner) return;
+  try {
+    const status = await window.twitchMod.getAuthStatus();
+    const needs = !!status.needsChattersScope;
+    scopeBanner.hidden = !needs;
+  } catch {
+    scopeBanner.hidden = true;
+  }
+}
+
+if (reloginBtn && typeof window.twitchMod.relogin === 'function') {
+  reloginBtn.addEventListener('click', async () => {
+    reloginBtn.disabled = true;
+    try {
+      await window.twitchMod.relogin();
+    } catch (err) {
+      showError(err.message || String(err));
+      reloginBtn.disabled = false;
+    }
+  });
+}
+
+if (typeof window.twitchMod.onSessionUpdated === 'function') {
+  window.twitchMod.onSessionUpdated(() => {
+    checkMemberListScope();
+    loadChannels();
+  });
+}
+
+checkMemberListScope();
+
 // ---- Hervorgehobene Wörter ----
 const hlForm = document.getElementById('hlForm');
 const hlInput = document.getElementById('hlInput');

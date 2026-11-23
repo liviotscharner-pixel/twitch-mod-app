@@ -3,6 +3,7 @@ import type {
   ChannelWindowData,
   ChatMessage,
   ChatSettings,
+  MemberListResult,
   ModeratedChannel,
   OpenUserWindowPayload,
   TwitchUser,
@@ -16,8 +17,12 @@ export interface TwitchModApi {
     storePath?: string;
     redirectUri?: string;
     authMode?: 'device' | 'pkce';
+    scopes?: string[];
+    needsChattersScope?: boolean;
   }>;
   login: () => Promise<{ user: TwitchUser }>;
+  relogin: () => Promise<{ ok: boolean }>;
+  onSessionUpdated: (callback: () => void) => () => void;
   onDeviceCode: (
     callback: (payload: { userCode: string; verificationUri: string }) => void
   ) => () => void;
@@ -72,11 +77,23 @@ export interface TwitchModApi {
   getHighlightWords: () => Promise<string[]>;
   setHighlightWords: (words: string[]) => Promise<string[]>;
   onHighlightWordsChanged: (callback: (words: string[]) => void) => () => void;
+  getMemberList: (payload: {
+    broadcasterId: string;
+    moderatorId: string;
+  }) => Promise<MemberListResult>;
 }
 
 const api: TwitchModApi = {
   getAuthStatus: () => ipcRenderer.invoke('auth:get-status'),
   login: () => ipcRenderer.invoke('auth:login'),
+  relogin: () => ipcRenderer.invoke('auth:relogin'),
+  onSessionUpdated: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('auth:session-updated', handler);
+    return () => {
+      ipcRenderer.removeListener('auth:session-updated', handler);
+    };
+  },
   onDeviceCode: (callback) => {
     const handler = (
       _event: Electron.IpcRendererEvent,
@@ -125,6 +142,7 @@ const api: TwitchModApi = {
       ipcRenderer.removeListener('highlights:changed', handler);
     };
   },
+  getMemberList: (payload) => ipcRenderer.invoke('members:list', payload),
 };
 
 contextBridge.exposeInMainWorld('twitchMod', api);

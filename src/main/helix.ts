@@ -1,5 +1,27 @@
 import { HELIX_BASE } from '../shared/constants';
-import type { ChatSettings, ModeratedChannel, TwitchUser } from '../shared/types';
+import type { ChatChatter, ChatSettings, ModeratedChannel, TwitchUser } from '../shared/types';
+
+export class HelixError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'HelixError';
+    this.status = status;
+  }
+}
+
+export function isMissingScopeError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const status = err instanceof HelixError ? err.status : 0;
+  const msg = err.message.toLowerCase();
+  return (
+    status === 401 ||
+    status === 403 ||
+    msg.includes('missing scope') ||
+    msg.includes('required scope') ||
+    (msg.includes('scope') && (msg.includes('missing') || msg.includes('authorize') || msg.includes('authorized')))
+  );
+}
 
 async function helixRequest<T>(
   method: string,
@@ -47,7 +69,7 @@ async function helixRequest<T>(
       (json as { message?: string })?.message ||
       text ||
       `Helix-Fehler ${res.status}`;
-    throw new Error(msg);
+    throw new HelixError(res.status, msg);
   }
 
   return json as T;
@@ -253,4 +275,102 @@ export async function resolveUserId(
   const user = data.data?.[0];
   if (!user) throw new Error(`Benutzer „${login}“ nicht gefunden.`);
   return user.id;
+}
+
+async function paginateHelix<T>(
+  path: string,
+  accessToken: string,
+  clientId: string,
+  query: Record<string, string | number | boolean | undefined | null>,
+  first: number
+): Promise<{ data: T[]; total?: number }> {
+  const items: T[] = [];
+  let cursor: string | undefined;
+  let total: number | undefined;
+
+  do {
+    const data = await helixGet<{
+      data: T[];
+      pagination?: { cursor?: string };
+      total?: number;
+    }>(path, accessToken, clientId, { ...query, first, after: cursor });
+    items.push(...(data.data || []));
+    if (typeof data.total === 'number') total = data.total;
+    cursor = data.pagination?.cursor;
+  } while (cursor);
+
+  return { data: items, total };
+}
+
+interface HelixUserRef {
+  user_id: string;
+  user_login: string;
+  user_name: string;
+}
+
+export async function getChatters(
+  accessToken: string,
+  clientId: string,
+  broadcasterId: string,
+  moderatorId: string
+): Promise<{ chatters: ChatChatter[]; total: number }> {
+  const { data, total } = await paginateHelix<HelixUserRef>(
+    'chat/chatters',
+    accessToken,
+    clientId,
+    { broadcaster_id: broadcasterId, moderator_id: moderatorId },
+    1000
+  );
+  const chatters: ChatChatter[] = data.map((u) => ({
+    userId: u.user_id,
+    userLogin: (u.user_login || '').toLowerCase(),
+    displayName: u.user_name || u.user_login,
+  }));
+  return { chatters, total: total ?? chatters.length };
+}
+
+export async function tryGetModeratorLogins(
+  accessToken: string,
+  clientId: string,
+  broadcasterId: string
+): Promise<{ logins: string[]; fromApi: boolean }> {
+  try {
+    const { data } = await paginateHelix<HelixUserRef>(
+      'moderation/moderators',
+      accessToken,
+      clientId,
+      { broadcaster_id: broadcasterId },
+      100
+    );
+    return {
+      logins: data.map((u) => (u.user_login || '').toLowerCase()).filter(Boolean),
+      fromApi: true,
+    };
+  } catch (err) {
+    console.warn('Moderatorenliste nicht verfügbar:', err);
+    return { logins: [], fromApi: false };
+  }
+}
+
+export async function tryGetVipLogins(
+  accessToken: string,
+  clientId: string,
+  broadcasterId: string
+): Promise<{ logins: string[]; fromApi: boolean }> {
+  try {
+    const { data } = await paginateHelix<HelixUserRef>(
+      'channels/vips',
+      accessToken,
+      clientId,
+      { broadcaster_id: broadcasterId },
+      100
+    );
+    return {
+      logins: data.map((u) => (u.user_login || '').toLowerCase()).filter(Boolean),
+      fromApi: true,
+    };
+  } catch (err) {
+    console.warn('VIP-Liste nicht verfügbar:', err);
+    return { logins: [], fromApi: false };
+  }
 }

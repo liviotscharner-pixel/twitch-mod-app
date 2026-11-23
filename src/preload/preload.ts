@@ -7,6 +7,8 @@ import type {
   ModeratedChannel,
   OpenUserWindowPayload,
   TwitchUser,
+  UserInfo,
+  UserInfoRequest,
 } from '../shared/types';
 
 export interface TwitchModApi {
@@ -82,6 +84,8 @@ export interface TwitchModApi {
     moderatorId: string;
     broadcasterLogin?: string;
   }) => Promise<MemberListResult>;
+  getUserInfo: (payload: UserInfoRequest) => Promise<UserInfo>;
+  openExternal: (url: string) => Promise<{ ok: boolean }>;
 }
 
 const api: TwitchModApi = {
@@ -144,6 +148,8 @@ const api: TwitchModApi = {
     };
   },
   getMemberList: (payload) => ipcRenderer.invoke('members:list', payload),
+  getUserInfo: (payload) => ipcRenderer.invoke('userinfo:get', payload),
+  openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
 };
 
 contextBridge.exposeInMainWorld('twitchMod', api);

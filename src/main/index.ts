@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { app, BrowserWindow, ipcMain, nativeImage, session } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeImage, session, shell } from 'electron';
 import dotenv from 'dotenv';
 import {
   login,
@@ -29,12 +29,14 @@ import {
 import { getChannelVipLogins, getModeratorLoginsAmong } from './gql';
 import { getTokens, getUser, setUser, getStorePath } from './store';
 import { getHighlightWords, setHighlightWords } from './highlights';
+import { getUserInfo } from './userinfo';
 import type {
   ChannelWindowData,
   ChatMessage,
   ChatSettings,
   MemberListResult,
   OpenUserWindowPayload,
+  UserInfoRequest,
   UserWindowData,
 } from '../shared/types';
 import { CHATTERS_SCOPE } from '../shared/types';
@@ -417,6 +419,25 @@ function registerIpc(): void {
       }
     }
   );
+
+  ipcMain.handle('userinfo:get', async (_e, payload: UserInfoRequest) => {
+    return getUserInfo(payload);
+  });
+
+  ipcMain.handle('shell:open-external', async (_e, rawUrl: string) => {
+    let parsed: URL;
+    try {
+      parsed = new URL(String(rawUrl || ''));
+    } catch {
+      throw new Error('Ungültige Adresse.');
+    }
+    if (parsed.protocol !== 'https:') throw new Error('Nur HTTPS-Links sind erlaubt.');
+    if (parsed.hostname !== 'www.twitch.tv' && parsed.hostname !== 'twitch.tv') {
+      throw new Error('Nur Twitch-Links können geöffnet werden.');
+    }
+    await shell.openExternal(parsed.toString());
+    return { ok: true };
+  });
 
   ipcMain.handle('users:open', async (_e, payload: OpenUserWindowPayload) => {
     openUserWindow(payload);

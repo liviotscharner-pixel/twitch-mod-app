@@ -7,6 +7,7 @@
   <title>Twitchy · Kanal</title>
   <link rel="stylesheet" href="../theme.css" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="../shared/user-info.css" />
 </head>
 <body>
   <header class="topbar">
@@ -49,6 +50,7 @@
     </aside>
 
     <aside class="mod-pane">
+      <div id="userInfoMount" class="user-info-host" hidden></div>
       <h2>Mod-Ziel</h2>
       <label class="field">
         <span>Benutzername</span>
@@ -58,7 +60,7 @@
         <span>Grund (optional)</span>
         <input id="reason" type="text" placeholder="Grund…" autocomplete="off" />
       </label>
-      <p class="hint">Klick: User als Mod-Ziel. Doppelklick auf Name/Nachricht: User-Fenster. Für „Nachricht löschen“ eine Nachricht anklicken.</p>
+      <p class="hint">Klick: als Mod-Ziel wählen und Infos anzeigen. Doppelklick auf Name/Nachricht: User-Fenster. Für „Nachricht löschen“ eine Nachricht anklicken.</p>
 
       <div class="selected-msg" id="selectedMsg" hidden>
         <span id="selectedMsgText"></span>
@@ -103,6 +105,8 @@
   </div>
   <script src="../shared/emotes.js"></script>
   <script src="../shared/highlights.js"></script>
+  <script src="../shared/bots.js"></script>
+  <script src="../shared/user-info.js"></script>
   <script src="irc.js"></script>
   <script src="members.js"></script>
   <script src="app.js"></script>

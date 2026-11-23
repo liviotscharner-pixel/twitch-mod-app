@@ -31,7 +31,7 @@ interface VipConnection {
 const vipCache = new Map<string, { at: number; logins: string[] }>();
 const modCache = new Map<string, Map<string, { at: number; isMod: boolean }>>();
 
-function isSafeLogin(login: string): boolean {
+export function isSafeLogin(login: string): boolean {
   return /^[a-z0-9_]{1,25}$/i.test(login);
 }
 
@@ -156,4 +156,94 @@ export async function getModeratorLoginsAmong(
   }
 
   return [...new Set(found)];
+}
+
+export interface GqlUserProfile {
+  id: string;
+  login: string;
+  displayName: string;
+  description: string;
+  createdAt: string;
+  profileImageUrl: string;
+  isPartner: boolean;
+  isAffiliate: boolean;
+  followers: number | null;
+  isLive: boolean;
+  streamTitle: string | null;
+  streamGame: string | null;
+  viewerCount: number | null;
+  lastTitle: string | null;
+  lastGame: string | null;
+}
+
+const PROFILE_QUERY = `query($login: String!) {
+  user(login: $login) {
+    id
+    login
+    displayName
+    description
+    createdAt
+    profileImageURL(width: 300)
+    roles { isPartner isAffiliate }
+    followers { totalCount }
+    stream {
+      id
+      title
+      viewersCount
+      game { name }
+    }
+    lastBroadcast {
+      title
+      game { name }
+    }
+  }
+}`;
+
+interface GqlProfileResponse {
+  user?: {
+    id?: string;
+    login?: string;
+    displayName?: string;
+    description?: string;
+    createdAt?: string;
+    profileImageURL?: string;
+    roles?: { isPartner?: boolean; isAffiliate?: boolean };
+    followers?: { totalCount?: number };
+    stream?: { id?: string; title?: string; viewersCount?: number; game?: { name?: string } | null } | null;
+    lastBroadcast?: { title?: string | null; game?: { name?: string } | null } | null;
+  } | null;
+}
+
+export async function getPublicUserProfile(login: string): Promise<GqlUserProfile | null> {
+  const name = (login || '').toLowerCase().replace(/^@/, '');
+  if (!isSafeLogin(name)) return null;
+  try {
+    const res = await gqlRequest<GqlProfileResponse>({
+      query: PROFILE_QUERY,
+      variables: { login: name },
+    });
+    const u = res.data?.user;
+    if (!u || !u.login) return null;
+    const live = !!u.stream?.id;
+    return {
+      id: u.id || '',
+      login: (u.login || name).toLowerCase(),
+      displayName: u.displayName || u.login || name,
+      description: u.description || '',
+      createdAt: u.createdAt || '',
+      profileImageUrl: u.profileImageURL || '',
+      isPartner: !!u.roles?.isPartner,
+      isAffiliate: !!u.roles?.isAffiliate,
+      followers: typeof u.followers?.totalCount === 'number' ? u.followers.totalCount : null,
+      isLive: live,
+      streamTitle: live ? u.stream?.title || null : null,
+      streamGame: live ? u.stream?.game?.name || null : null,
+      viewerCount: live && typeof u.stream?.viewersCount === 'number' ? u.stream.viewersCount : null,
+      lastTitle: u.lastBroadcast?.title || null,
+      lastGame: u.lastBroadcast?.game?.name || null,
+    };
+  } catch (err) {
+    console.warn('GQL Profil nicht verfügbar:', err);
+    return null;
+  }
 }

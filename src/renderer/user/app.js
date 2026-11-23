@@ -74,6 +74,25 @@
     }
   }
 
+  const userInfoMount = document.getElementById('userInfoMount');
+  const userInfoCard =
+    userInfoMount && window.TwitchyUserInfo
+      ? window.TwitchyUserInfo.mount(userInfoMount, { closable: false })
+      : null;
+
+  function showUserCard(fromMsg) {
+    if (!userInfoCard) return;
+    userInfoCard.show({
+      userLogin,
+      userId,
+      displayName,
+      badges: fromMsg && fromMsg.badges ? fromMsg.badges : [],
+      role: fromMsg ? resolveChatRole(fromMsg) : '',
+      broadcasterId,
+      broadcasterLogin,
+    });
+  }
+
   function clearEmpty() {
     const empty = chatLog.querySelector('.empty-state');
     if (empty) empty.remove();
@@ -251,12 +270,15 @@
         if (boot.userId) userId = boot.userId;
         updateHeader('normal');
         renderHistory(boot.history || []);
+        showUserCard((boot.history || [])[0]);
       } else {
         showEmptyIfNeeded();
+        showUserCard();
       }
     } catch (err) {
       showAction(false, err.message || String(err));
       showEmptyIfNeeded();
+      showUserCard();
     }
   })();
 

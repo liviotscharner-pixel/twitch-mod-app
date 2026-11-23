@@ -3,22 +3,6 @@
   const STORAGE_GROUPS = 'twitchy.membersGroupCollapsed';
   const REFRESH_MS = 60000;
 
-  /** Known chat bots — extend here. A bot that is also a mod still goes into Bots. */
-  const KNOWN_CHAT_BOTS = [
-    'streamelements',
-    'nightbot',
-    'moobot',
-    'fossabot',
-    'wizebot',
-    'streamlabs',
-    'soundalerts',
-    'sery_bot',
-    'commanderroot',
-    'botrixoficial',
-    'kofistreambot',
-  ];
-  const KNOWN_BOT_SET = new Set(KNOWN_CHAT_BOTS);
-
   const GROUPS = [
     { id: 'broadcaster', label: 'Broadcaster' },
     { id: 'moderator', label: 'Moderatoren' },
@@ -169,7 +153,7 @@
       }
 
       function isBot(login, info) {
-        if (KNOWN_BOT_SET.has(login)) return true;
+        if (window.TwitchyBots) return window.TwitchyBots.isBot(login, info && info.badges);
         const badges = badgeSet(info && info.badges);
         return badges.has('bot') || badges.has('twitchbot');
       }

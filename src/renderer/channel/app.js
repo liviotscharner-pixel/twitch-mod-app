@@ -90,6 +90,28 @@
     actionStatus.textContent = text;
   }
 
+  const userInfoMount = document.getElementById('userInfoMount');
+  const userInfoCard =
+    userInfoMount && window.TwitchyUserInfo
+      ? window.TwitchyUserInfo.mount(userInfoMount, { closable: true })
+      : null;
+
+  function showUserCard(user) {
+    if (!userInfoCard) return;
+    const login = (user.userLogin || user.user || '').toLowerCase();
+    if (!login) return;
+    userInfoCard.show({
+      userLogin: login,
+      userId: user.userId || '',
+      displayName: user.displayName || login,
+      badges: user.badges || [],
+      role: user.role || '',
+      group: user.group || '',
+      broadcasterId,
+      broadcasterLogin,
+    });
+  }
+
   /**
    * Role priority: Mod/Broadcaster > VIP > Sub > Normal
    * @returns {'mod'|'vip'|'sub'|'normal'}
@@ -166,6 +188,7 @@
       e.stopPropagation();
       targetUser.value = msg.user;
       showAction(true, `Ziel: ${msg.displayName}`);
+      showUserCard(msg);
     });
     userSpan.addEventListener('dblclick', (e) => {
       e.stopPropagation();
@@ -196,6 +219,7 @@
       selectedMsgEl.hidden = false;
       selectedMsgText.textContent = `${msg.displayName}: ${msg.message}`;
       targetUser.value = msg.user;
+      showUserCard(msg);
     });
 
     div.addEventListener('dblclick', (e) => {
@@ -453,6 +477,7 @@
       onSelect: (user) => {
         targetUser.value = user.userLogin;
         showAction(true, `Ziel: ${user.displayName}`);
+        showUserCard(user);
       },
       onOpen: (user) => {
         openUserWindowFor({

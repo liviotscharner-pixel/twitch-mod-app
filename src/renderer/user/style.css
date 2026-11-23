@@ -6,6 +6,10 @@ html, body {
   color: var(--text);
   overflow: hidden;
 }
+body {
+  display: flex;
+  flex-direction: column;
+}
 .topbar {
   display: flex;
   align-items: center;
@@ -34,7 +38,9 @@ html, body {
 .layout {
   display: grid;
   grid-template-rows: 1fr auto;
-  height: calc(100% - 58px);
+  flex: 1;
+  min-height: 0;
+  height: auto;
 }
 .chat-pane {
   display: flex;

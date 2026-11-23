@@ -85,6 +85,7 @@ export const TIMEOUT_PRESETS = [
 export const CHATTERS_SCOPE = 'moderator:read:chatters';
 export const MODERATORS_SCOPE = 'moderation:read';
 export const VIPS_SCOPE = 'channel:read:vips';
+export const FOLLOWERS_SCOPE = 'moderator:read:followers';
 
 export const OAUTH_SCOPES = [
   'user:read:email',
@@ -98,6 +99,7 @@ export const OAUTH_SCOPES = [
   CHATTERS_SCOPE,
   MODERATORS_SCOPE,
   VIPS_SCOPE,
+  FOLLOWERS_SCOPE,
 ] as const;
 
 export interface ChatChatter {
@@ -118,4 +120,33 @@ export interface MemberListResult {
   vipLogins?: string[];
   modsFromApi?: boolean;
   vipsFromApi?: boolean;
+}
+
+export interface UserInfoRequest {
+  userLogin: string;
+  userId?: string;
+  broadcasterId: string;
+  broadcasterLogin: string;
+}
+
+export interface UserInfo {
+  ok: boolean;
+  message?: string;
+  userId: string;
+  login: string;
+  displayName: string;
+  profileImageUrl?: string;
+  createdAt?: string;
+  broadcasterType?: string;
+  description?: string;
+  followers?: number | null;
+  followsChannel?: boolean | null;
+  followedAt?: string | null;
+  followsNeedsScope?: boolean;
+  isLive?: boolean;
+  streamTitle?: string | null;
+  streamGame?: string | null;
+  viewerCount?: number | null;
+  lastTitle?: string | null;
+  lastGame?: string | null;
 }

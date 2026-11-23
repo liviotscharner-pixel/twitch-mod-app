@@ -138,6 +138,33 @@ interface TwitchModApi {
     modsFromApi?: boolean;
     vipsFromApi?: boolean;
   }>;
+  getUserInfo: (payload: {
+    userLogin: string;
+    userId?: string;
+    broadcasterId: string;
+    broadcasterLogin: string;
+  }) => Promise<{
+    ok: boolean;
+    message?: string;
+    userId: string;
+    login: string;
+    displayName: string;
+    profileImageUrl?: string;
+    createdAt?: string;
+    broadcasterType?: string;
+    description?: string;
+    followers?: number | null;
+    followsChannel?: boolean | null;
+    followedAt?: string | null;
+    followsNeedsScope?: boolean;
+    isLive?: boolean;
+    streamTitle?: string | null;
+    streamGame?: string | null;
+    viewerCount?: number | null;
+    lastTitle?: string | null;
+    lastGame?: string | null;
+  }>;
+  openExternal: (url: string) => Promise<{ ok: boolean }>;
 }
 
 interface Window {

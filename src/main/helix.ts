@@ -374,3 +374,109 @@ export async function tryGetVipLogins(
     return { logins: [], fromApi: false };
   }
 }
+
+export interface HelixUserProfile {
+  id: string;
+  login: string;
+  display_name: string;
+  broadcaster_type: string;
+  description: string;
+  profile_image_url: string;
+  created_at: string;
+}
+
+export async function getHelixUser(
+  accessToken: string,
+  clientId: string,
+  opts: { login?: string; id?: string }
+): Promise<HelixUserProfile | null> {
+  const query: Record<string, string> = {};
+  if (opts.id) query.id = opts.id;
+  else if (opts.login) query.login = opts.login.toLowerCase().replace(/^@/, '');
+  else return null;
+  const data = await helixGet<{ data: HelixUserProfile[] }>('users', accessToken, clientId, query);
+  return data.data?.[0] || null;
+}
+
+export async function getChannelInfo(
+  accessToken: string,
+  clientId: string,
+  broadcasterId: string
+): Promise<{ title: string; game_name: string } | null> {
+  const data = await helixGet<{ data: Array<{ title?: string; game_name?: string }> }>(
+    'channels',
+    accessToken,
+    clientId,
+    { broadcaster_id: broadcasterId }
+  );
+  const ch = data.data?.[0];
+  if (!ch) return null;
+  return { title: ch.title || '', game_name: ch.game_name || '' };
+}
+
+export async function getStreamInfo(
+  accessToken: string,
+  clientId: string,
+  userId: string
+): Promise<{ title: string; game_name: string; viewer_count: number } | null> {
+  const data = await helixGet<{
+    data: Array<{ title?: string; game_name?: string; viewer_count?: number; type?: string }>;
+  }>('streams', accessToken, clientId, { user_id: userId });
+  const s = data.data?.[0];
+  if (!s) return null;
+  return {
+    title: s.title || '',
+    game_name: s.game_name || '',
+    viewer_count: typeof s.viewer_count === 'number' ? s.viewer_count : 0,
+  };
+}
+
+/** Follower total for a channel. Often fails unless we moderate that channel. */
+export async function tryGetFollowerTotal(
+  accessToken: string,
+  clientId: string,
+  broadcasterId: string
+): Promise<number | null> {
+  try {
+    const data = await helixGet<{ total?: number }>('channels/followers', accessToken, clientId, {
+      broadcaster_id: broadcasterId,
+      first: 1,
+    });
+    return typeof data.total === 'number' ? data.total : null;
+  } catch (err) {
+    if (!isMissingScopeError(err)) {
+      console.warn('Follower-Anzahl (Helix) nicht verfügbar:', err);
+    }
+    return null;
+  }
+}
+
+export type FollowsChannelResult =
+  | { status: 'ok'; follows: boolean; followedAt: string | null }
+  | { status: 'needs_scope' }
+  | { status: 'unavailable' };
+
+/** Whether `userId` follows `channelId`. Needs moderator:read:followers on the current channel. */
+export async function tryGetFollowsChannel(
+  accessToken: string,
+  clientId: string,
+  channelId: string,
+  userId: string
+): Promise<FollowsChannelResult> {
+  try {
+    const data = await helixGet<{
+      total?: number;
+      data?: Array<{ followed_at?: string; user_id?: string }>;
+    }>('channels/followers', accessToken, clientId, {
+      broadcaster_id: channelId,
+      user_id: userId,
+    });
+    const row = data.data?.[0];
+    const follows = !!row || (typeof data.total === 'number' && data.total > 0);
+    return { status: 'ok', follows, followedAt: row?.followed_at || null };
+  } catch (err) {
+    if (isMissingScopeError(err)) return { status: 'needs_scope' };
+    console.warn('Follow-Check (Helix) nicht verfügbar:', err);
+    return { status: 'unavailable' };
+  }
+}

@@ -25,21 +25,26 @@ import {
   tryGetModeratorLogins,
   tryGetVipLogins,
   isMissingScopeError,
+  getChannelInfo,
+  searchCategories,
+  patchChannelInfo,
 } from './helix';
 import { getChannelVipLogins, getModeratorLoginsAmong } from './gql';
 import { getTokens, getUser, setUser, getStorePath } from './store';
 import { getHighlightWords, setHighlightWords } from './highlights';
 import { getUserInfo } from './userinfo';
 import type {
+  ChannelBroadcastInfo,
   ChannelWindowData,
   ChatMessage,
   ChatSettings,
   MemberListResult,
   OpenUserWindowPayload,
+  UpdateChannelResult,
   UserInfoRequest,
   UserWindowData,
 } from '../shared/types';
-import { CHATTERS_SCOPE } from '../shared/types';
+import { BROADCAST_SCOPE, CHATTERS_SCOPE } from '../shared/types';
 
 // Load .env from project root (cwd when npm start) and next to packaged app
 function loadEnv(): void {
@@ -424,6 +429,108 @@ function registerIpc(): void {
     return getUserInfo(payload);
   });
 
+  ipcMain.handle(
+    'channel:get-broadcast',
+    async (_e, payload: { broadcasterId: string }): Promise<ChannelBroadcastInfo> => {
+      const token = await ensureValidToken();
+      const clientId = getClientId();
+      const user = getUser();
+      const info = await getChannelInfo(token, clientId, payload.broadcasterId);
+      if (!info) throw new Error('Kanalinfos konnten nicht geladen werden.');
+      const canEdit = !!user && user.id === payload.broadcasterId;
+      let needsBroadcastScope = false;
+      if (canEdit) {
+        const validated = await validateToken(token);
+        const scopes = validated?.scopes || getTokens()?.scopes || [];
+        needsBroadcastScope = !scopes.includes(BROADCAST_SCOPE);
+      }
+      return {
+        title: info.title,
+        gameName: info.game_name,
+        gameId: info.game_id,
+        canEdit,
+        needsBroadcastScope,
+      };
+    }
+  );
+
+  ipcMain.handle(
+    'channel:search-categories',
+    async (_e, payload: { query: string }) => {
+      const token = await ensureValidToken();
+      const clientId = getClientId();
+      const results = await searchCategories(token, clientId, payload.query || '');
+      return {
+        categories: results.map((c) => ({
+          id: c.id,
+          name: c.name,
+          boxArtUrl: c.box_art_url,
+        })),
+      };
+    }
+  );
+
+  ipcMain.handle(
+    'channel:update-broadcast',
+    async (
+      _e,
+      payload: { broadcasterId: string; title?: string; gameId?: string }
+    ): Promise<UpdateChannelResult> => {
+      const token = await ensureValidToken();
+      const clientId = getClientId();
+      const user = getUser();
+      if (!user || user.id !== payload.broadcasterId) {
+        return {
+          ok: false,
+          notBroadcaster: true,
+          message:
+            'Twitch erlaubt das Ändern des Titels nur dem Streamer selbst oder Editoren über twitch.tv',
+        };
+      }
+      const validated = await validateToken(token);
+      const scopes = validated?.scopes || getTokens()?.scopes || [];
+      if (!scopes.includes(BROADCAST_SCOPE)) {
+        return {
+          ok: false,
+          needsRelogin: true,
+          message: 'Für das Ändern des Titels bitte neu anmelden',
+        };
+      }
+
+      const patch: { title?: string; game_id?: string } = {};
+      if (payload.title !== undefined) {
+        const title = String(payload.title || '').trim();
+        if (!title) return { ok: false, message: 'Der Titel darf nicht leer sein.' };
+        if (title.length > 140) return { ok: false, message: 'Der Titel darf höchstens 140 Zeichen haben.' };
+        patch.title = title;
+      }
+      if (payload.gameId !== undefined) patch.game_id = String(payload.gameId);
+
+      try {
+        await patchChannelInfo(token, clientId, payload.broadcasterId, patch);
+        const info = await getChannelInfo(token, clientId, payload.broadcasterId);
+        return {
+          ok: true,
+          message: 'Titel gespeichert.',
+          title: info?.title,
+          gameName: info?.game_name,
+          gameId: info?.game_id,
+        };
+      } catch (err) {
+        if (isMissingScopeError(err)) {
+          return {
+            ok: false,
+            needsRelogin: true,
+            message: 'Für das Ändern des Titels bitte neu anmelden',
+          };
+        }
+        const message = err instanceof Error ? err.message : String(err);
+        return { ok: false, message: `Titel konnte nicht gespeichert werden: ${message}` };
+      }
+    }
+  );
+
+
   ipcMain.handle('shell:open-external', async (_e, rawUrl: string) => {
     let parsed: URL;
     try {
@@ -432,7 +539,8 @@ function registerIpc(): void {
       throw new Error('Ungültige Adresse.');
     }
     if (parsed.protocol !== 'https:') throw new Error('Nur HTTPS-Links sind erlaubt.');
-    if (parsed.hostname !== 'www.twitch.tv' && parsed.hostname !== 'twitch.tv') {
+    const allowedHosts = new Set(['www.twitch.tv', 'twitch.tv', 'dashboard.twitch.tv']);
+    if (!allowedHosts.has(parsed.hostname)) {
       throw new Error('Nur Twitch-Links können geöffnet werden.');
     }
     await shell.openExternal(parsed.toString());

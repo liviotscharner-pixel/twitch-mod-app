@@ -9,6 +9,9 @@ import type {
   TwitchUser,
   UserInfo,
   UserInfoRequest,
+  ChannelBroadcastInfo,
+  CategorySearchResult,
+  UpdateChannelResult,
 } from '../shared/types';
 
 export interface TwitchModApi {
@@ -86,6 +89,13 @@ export interface TwitchModApi {
   }) => Promise<MemberListResult>;
   getUserInfo: (payload: UserInfoRequest) => Promise<UserInfo>;
   openExternal: (url: string) => Promise<{ ok: boolean }>;
+  getChannelBroadcast: (payload: { broadcasterId: string }) => Promise<ChannelBroadcastInfo>;
+  searchCategories: (payload: { query: string }) => Promise<{ categories: CategorySearchResult[] }>;
+  updateChannelBroadcast: (payload: {
+    broadcasterId: string;
+    title?: string;
+    gameId?: string;
+  }) => Promise<UpdateChannelResult>;
 }
 
 const api: TwitchModApi = {
@@ -150,6 +160,9 @@ const api: TwitchModApi = {
   getMemberList: (payload) => ipcRenderer.invoke('members:list', payload),
   getUserInfo: (payload) => ipcRenderer.invoke('userinfo:get', payload),
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
+  getChannelBroadcast: (payload) => ipcRenderer.invoke('channel:get-broadcast', payload),
+  searchCategories: (payload) => ipcRenderer.invoke('channel:search-categories', payload),
+  updateChannelBroadcast: (payload) => ipcRenderer.invoke('channel:update-broadcast', payload),
 };
 
 contextBridge.exposeInMainWorld('twitchMod', api);

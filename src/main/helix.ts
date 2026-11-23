@@ -402,16 +402,48 @@ export async function getChannelInfo(
   accessToken: string,
   clientId: string,
   broadcasterId: string
-): Promise<{ title: string; game_name: string } | null> {
-  const data = await helixGet<{ data: Array<{ title?: string; game_name?: string }> }>(
-    'channels',
-    accessToken,
-    clientId,
-    { broadcaster_id: broadcasterId }
-  );
+): Promise<{ title: string; game_name: string; game_id: string } | null> {
+  const data = await helixGet<{
+    data: Array<{ title?: string; game_name?: string; game_id?: string }>;
+  }>('channels', accessToken, clientId, { broadcaster_id: broadcasterId });
   const ch = data.data?.[0];
   if (!ch) return null;
-  return { title: ch.title || '', game_name: ch.game_name || '' };
+  return {
+    title: ch.title || '',
+    game_name: ch.game_name || '',
+    game_id: ch.game_id || '',
+  };
+}
+
+export async function searchCategories(
+  accessToken: string,
+  clientId: string,
+  query: string,
+  first = 20
+): Promise<Array<{ id: string; name: string; box_art_url?: string }>> {
+  const q = String(query || '').trim();
+  if (!q) return [];
+  const data = await helixGet<{
+    data?: Array<{ id?: string; name?: string; box_art_url?: string }>;
+  }>('search/categories', accessToken, clientId, { query: q, first: Math.min(25, Math.max(1, first)) });
+  return (data.data || [])
+    .filter((c) => c.id && c.name)
+    .map((c) => ({ id: c.id as string, name: c.name as string, box_art_url: c.box_art_url }));
+}
+
+export async function patchChannelInfo(
+  accessToken: string,
+  clientId: string,
+  broadcasterId: string,
+  patch: { title?: string; game_id?: string }
+): Promise<void> {
+  const body: Record<string, string> = {};
+  if (patch.title !== undefined) body.title = patch.title;
+  if (patch.game_id !== undefined) body.game_id = patch.game_id;
+  if (!Object.keys(body).length) {
+    throw new Error('Nichts zu speichern.');
+  }
+  await helixPatch('channels', accessToken, clientId, { broadcaster_id: broadcasterId }, body);
 }
 
 export async function getStreamInfo(

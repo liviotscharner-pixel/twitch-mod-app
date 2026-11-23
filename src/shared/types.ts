@@ -86,6 +86,7 @@ export const CHATTERS_SCOPE = 'moderator:read:chatters';
 export const MODERATORS_SCOPE = 'moderation:read';
 export const VIPS_SCOPE = 'channel:read:vips';
 export const FOLLOWERS_SCOPE = 'moderator:read:followers';
+export const BROADCAST_SCOPE = 'channel:manage:broadcast';
 
 export const OAUTH_SCOPES = [
   'user:read:email',
@@ -100,6 +101,7 @@ export const OAUTH_SCOPES = [
   MODERATORS_SCOPE,
   VIPS_SCOPE,
   FOLLOWERS_SCOPE,
+  BROADCAST_SCOPE,
 ] as const;
 
 export interface ChatChatter {
@@ -149,4 +151,28 @@ export interface UserInfo {
   viewerCount?: number | null;
   lastTitle?: string | null;
   lastGame?: string | null;
+}
+
+export interface ChannelBroadcastInfo {
+  title: string;
+  gameName: string;
+  gameId: string;
+  canEdit: boolean;
+  needsBroadcastScope: boolean;
+}
+
+export interface CategorySearchResult {
+  id: string;
+  name: string;
+  boxArtUrl?: string;
+}
+
+export interface UpdateChannelResult {
+  ok: boolean;
+  message?: string;
+  needsRelogin?: boolean;
+  notBroadcaster?: boolean;
+  title?: string;
+  gameName?: string;
+  gameId?: string;
 }

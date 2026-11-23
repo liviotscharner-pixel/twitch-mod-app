@@ -489,8 +489,268 @@
     });
   }
 
+
+  const streamInfoEl = document.getElementById('streamInfo');
+  const titleDialog = document.getElementById('titleDialog');
+  const titleInput = document.getElementById('titleInput');
+  const titleCount = document.getElementById('titleCount');
+  const categoryInput = document.getElementById('categoryInput');
+  const categoryResults = document.getElementById('categoryResults');
+  const titleDialogHint = document.getElementById('titleDialogHint');
+  const titleDialogStatus = document.getElementById('titleDialogStatus');
+  const titleSave = document.getElementById('titleSave');
+  const titleCancel = document.getElementById('titleCancel');
+  const titleOpenDash = document.getElementById('titleOpenDash');
+  const titleRelogin = document.getElementById('titleRelogin');
+  const editTitleBtn = document.getElementById('editTitleBtn');
+
+  let broadcastInfo = {
+    title: '',
+    gameName: '',
+    gameId: '',
+    canEdit: false,
+    needsBroadcastScope: false,
+  };
+  let pickedGameId = '';
+  let searchTimer = null;
+  let searchSeq = 0;
+
+  function renderStreamInfo(info) {
+    if (!streamInfoEl) return;
+    const title = (info && info.title) || '';
+    const game = (info && info.gameName) || '';
+    if (!title && !game) {
+      streamInfoEl.hidden = true;
+      streamInfoEl.textContent = '';
+      return;
+    }
+    streamInfoEl.hidden = false;
+    streamInfoEl.innerHTML = '';
+    if (game) {
+      const g = document.createElement('span');
+      g.className = 'stream-game';
+      g.textContent = game;
+      streamInfoEl.appendChild(g);
+      if (title) streamInfoEl.appendChild(document.createTextNode(' · '));
+    }
+    if (title) streamInfoEl.appendChild(document.createTextNode(title));
+    streamInfoEl.title = [game, title].filter(Boolean).join(' · ');
+  }
+
+  async function loadBroadcastInfo() {
+    if (!broadcasterId || typeof window.twitchMod.getChannelBroadcast !== 'function') return;
+    try {
+      const info = await window.twitchMod.getChannelBroadcast({ broadcasterId });
+      broadcastInfo = info;
+      renderStreamInfo(info);
+    } catch (err) {
+      console.warn('Kanalinfos laden fehlgeschlagen', err);
+    }
+  }
+
+  function updateTitleCount() {
+    if (!titleCount || !titleInput) return;
+    const n = titleInput.value.length;
+    titleCount.textContent = n + ' / 140';
+    titleCount.classList.toggle('warn', n >= 130);
+  }
+
+  function setDialogStatus(kind, text) {
+    if (!titleDialogStatus) return;
+    if (!text) {
+      titleDialogStatus.hidden = true;
+      titleDialogStatus.textContent = '';
+      titleDialogStatus.className = 'title-dialog-status';
+      return;
+    }
+    titleDialogStatus.hidden = false;
+    titleDialogStatus.className = 'title-dialog-status ' + (kind || '');
+    titleDialogStatus.textContent = text;
+  }
+
+  function setDialogHint(text) {
+    if (!titleDialogHint) return;
+    titleDialogHint.hidden = !text;
+    titleDialogHint.textContent = text || '';
+  }
+
+  function applyPermissionUi() {
+    const isOwn = !!broadcastInfo.canEdit;
+    const needsScope = !!broadcastInfo.needsBroadcastScope;
+    if (titleOpenDash) titleOpenDash.hidden = isOwn;
+    if (titleRelogin) titleRelogin.hidden = !(isOwn && needsScope);
+    if (titleSave) {
+      titleSave.hidden = !isOwn;
+      titleSave.disabled = isOwn && needsScope;
+    }
+    if (!isOwn) {
+      setDialogHint(
+        'Twitch erlaubt das Ändern des Titels nur dem Streamer selbst oder Editoren über twitch.tv'
+      );
+    } else if (needsScope) {
+      setDialogHint('Für das Ändern des Titels bitte neu anmelden');
+    } else {
+      setDialogHint('');
+    }
+  }
+
+  async function openTitleDialog() {
+    await loadBroadcastInfo();
+    if (titleInput) titleInput.value = broadcastInfo.title || '';
+    if (categoryInput) categoryInput.value = broadcastInfo.gameName || '';
+    pickedGameId = broadcastInfo.gameId || '';
+    updateTitleCount();
+    setDialogStatus('', '');
+    if (categoryResults) {
+      categoryResults.hidden = true;
+      categoryResults.innerHTML = '';
+    }
+    applyPermissionUi();
+    if (titleDialog) titleDialog.hidden = false;
+    if (titleInput) titleInput.focus();
+  }
+
+  function closeTitleDialog() {
+    if (titleDialog) titleDialog.hidden = true;
+    if (categoryResults) {
+      categoryResults.hidden = true;
+      categoryResults.innerHTML = '';
+    }
+  }
+
+  function renderCategoryResults(list) {
+    if (!categoryResults) return;
+    categoryResults.innerHTML = '';
+    if (!list || !list.length) {
+      categoryResults.hidden = true;
+      return;
+    }
+    categoryResults.hidden = false;
+    list.forEach((cat) => {
+      const li = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      if (cat.boxArtUrl) {
+        const img = document.createElement('img');
+        img.alt = '';
+        img.src = String(cat.boxArtUrl).replace('{width}', '52').replace('{height}', '72');
+        btn.appendChild(img);
+      }
+      btn.appendChild(document.createTextNode(cat.name));
+      btn.addEventListener('click', () => {
+        pickedGameId = cat.id;
+        if (categoryInput) categoryInput.value = cat.name;
+        categoryResults.hidden = true;
+        categoryResults.innerHTML = '';
+      });
+      li.appendChild(btn);
+      categoryResults.appendChild(li);
+    });
+  }
+
+  async function searchCats(query) {
+    const q = String(query || '').trim();
+    if (q.length < 2 || typeof window.twitchMod.searchCategories !== 'function') {
+      renderCategoryResults([]);
+      return;
+    }
+    const seq = ++searchSeq;
+    try {
+      const res = await window.twitchMod.searchCategories({ query: q });
+      if (seq !== searchSeq) return;
+      renderCategoryResults((res && res.categories) || []);
+    } catch (err) {
+      if (seq !== searchSeq) return;
+      renderCategoryResults([]);
+      setDialogStatus('err', err.message || String(err));
+    }
+  }
+
+  if (editTitleBtn) editTitleBtn.addEventListener('click', () => openTitleDialog());
+  if (titleCancel) titleCancel.addEventListener('click', () => closeTitleDialog());
+  if (titleDialog) {
+    titleDialog.addEventListener('click', (e) => {
+      if (e.target && e.target.getAttribute('data-close') === '1') closeTitleDialog();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && titleDialog && !titleDialog.hidden) closeTitleDialog();
+  });
+  if (titleInput) titleInput.addEventListener('input', updateTitleCount);
+  if (categoryInput) {
+    categoryInput.addEventListener('input', () => {
+      if (categoryInput.value.trim() !== (broadcastInfo.gameName || '').trim()) {
+        pickedGameId = '';
+      }
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => searchCats(categoryInput.value), 280);
+    });
+  }
+  if (titleOpenDash) {
+    titleOpenDash.addEventListener('click', async () => {
+      const url = 'https://dashboard.twitch.tv/u/' + encodeURIComponent(broadcasterLogin) + '/stream-manager';
+      try {
+        if (typeof window.twitchMod.openExternal === 'function') {
+          await window.twitchMod.openExternal(url);
+        } else {
+          window.open(url, '_blank', 'noopener');
+        }
+      } catch (err) {
+        setDialogStatus('err', err.message || String(err));
+      }
+    });
+  }
+  if (titleRelogin && typeof window.twitchMod.relogin === 'function') {
+    titleRelogin.addEventListener('click', async () => {
+      try {
+        await window.twitchMod.relogin();
+      } catch (err) {
+        setDialogStatus('err', err.message || String(err));
+      }
+    });
+  }
+  if (titleSave) {
+    titleSave.addEventListener('click', async () => {
+      const title = (titleInput && titleInput.value ? titleInput.value : '').trim();
+      if (!title) {
+        setDialogStatus('err', 'Der Titel darf nicht leer sein.');
+        return;
+      }
+      titleSave.disabled = true;
+      setDialogStatus('', 'Speichere…');
+      try {
+        const payload = { broadcasterId, title };
+        if (pickedGameId) payload.gameId = pickedGameId;
+        const res = await window.twitchMod.updateChannelBroadcast(payload);
+        if (!res || !res.ok) {
+          setDialogStatus('err', (res && res.message) || 'Titel konnte nicht gespeichert werden.');
+          if (res && res.needsRelogin) {
+            broadcastInfo.needsBroadcastScope = true;
+            applyPermissionUi();
+          }
+          return;
+        }
+        broadcastInfo.title = res.title || title;
+        if (res.gameName != null) broadcastInfo.gameName = res.gameName;
+        if (res.gameId != null) broadcastInfo.gameId = res.gameId;
+        renderStreamInfo(broadcastInfo);
+        setDialogStatus('ok', res.message || 'Titel gespeichert.');
+        setTimeout(() => closeTitleDialog(), 700);
+      } catch (err) {
+        setDialogStatus('err', err.message || String(err));
+      } finally {
+        titleSave.disabled = !!broadcastInfo.needsBroadcastScope;
+      }
+    });
+  }
+  if (typeof window.twitchMod.onSessionUpdated === 'function') {
+    window.twitchMod.onSessionUpdated(() => {
+      loadBroadcastInfo();
+    });
+  }
+
   (async function boot() {
-    await Promise.all([loadEmotes(), loadHighlights()]);
+    await Promise.all([loadEmotes(), loadHighlights(), loadBroadcastInfo()]);
     connectIrc();
     loadSettings();
   })();

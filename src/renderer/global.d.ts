@@ -165,6 +165,29 @@ interface TwitchModApi {
     lastGame?: string | null;
   }>;
   openExternal: (url: string) => Promise<{ ok: boolean }>;
+  getChannelBroadcast: (payload: { broadcasterId: string }) => Promise<{
+    title: string;
+    gameName: string;
+    gameId: string;
+    canEdit: boolean;
+    needsBroadcastScope: boolean;
+  }>;
+  searchCategories: (payload: { query: string }) => Promise<{
+    categories: Array<{ id: string; name: string; boxArtUrl?: string }>;
+  }>;
+  updateChannelBroadcast: (payload: {
+    broadcasterId: string;
+    title?: string;
+    gameId?: string;
+  }) => Promise<{
+    ok: boolean;
+    message?: string;
+    needsRelogin?: boolean;
+    notBroadcaster?: boolean;
+    title?: string;
+    gameName?: string;
+    gameId?: string;
+  }>;
 }
 
 interface Window {
